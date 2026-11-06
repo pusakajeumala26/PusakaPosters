@@ -8,7 +8,18 @@ type InstallEvent = Event & {
 };
 
 let deferred: InstallEvent | null = null;
-let installed = false;
+const isStandalone = () => typeof window !== 'undefined' && (
+  window.matchMedia('(display-mode: standalone)').matches ||
+  (navigator as Navigator & { standalone?: boolean }).standalone === true
+);
+const isIosSafari = () => {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent;
+  const ios = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return ios && /safari/i.test(ua) && !/(crios|fxios|edgios|opios|duckduckgo|gsa)/i.test(ua);
+};
+let installed = isStandalone();
+let iosSafari = isIosSafari();
 let started = false;
 const subs = new Set<() => void>();
 const emit = () => subs.forEach((fn) => fn());
@@ -17,9 +28,8 @@ const emit = () => subs.forEach((fn) => fn());
 export function initPwa() {
   if (started || typeof window === 'undefined') return;
   started = true;
-  installed =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  installed = isStandalone();
+  iosSafari = isIosSafari();
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferred = e as InstallEvent;
@@ -45,6 +55,7 @@ export type InstallOutcome = 'accepted' | 'dismissed' | 'ios' | 'manual';
 export function usePwaInstall() {
   const canPrompt = useSyncExternalStore(subscribe, () => deferred !== null, () => false);
   const isInstalled = useSyncExternalStore(subscribe, () => installed, () => false);
+  const showIosHelp = useSyncExternalStore(subscribe, () => iosSafari, () => false);
 
   const install = useCallback(async (): Promise<InstallOutcome> => {
     if (deferred) {
@@ -52,12 +63,12 @@ export function usePwaInstall() {
       await evt.prompt();
       const { outcome } = await evt.userChoice;
       deferred = null;
+      if (outcome === 'accepted') installed = true;
       emit();
       return outcome;
     }
-    const ua = navigator.userAgent;
-    return /iphone|ipad|ipod/i.test(ua) ? 'ios' : 'manual';
-  }, []);
+    return showIosHelp ? 'ios' : 'manual';
+  }, [showIosHelp]);
 
-  return { canPrompt, installed: isInstalled, install };
+  return { canPrompt, installed: isInstalled, iosSafari: showIosHelp, canInstall: canPrompt || (showIosHelp && !isInstalled), install };
 }
