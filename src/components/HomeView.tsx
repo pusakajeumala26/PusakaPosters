@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { formatWhen } from '@/lib/format';
 import type { EditableMember, Gender, MemberView, Stats } from '@/lib/types';
 import { Avatar } from './Avatar';
@@ -9,6 +9,7 @@ import { IconChevronDown, IconChevronRight, IconSearch, IconSort, IconUpload } f
 import { MemberSheet } from './MemberSheet';
 import { useToast } from './ToastProvider';
 import { UploadModal, type EditingState } from './UploadModal';
+import { Select } from './Select';
 
 type Props = {
   members: MemberView[];
@@ -28,6 +29,7 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
   const [sort, setSort] = useState<'new' | 'az'>('new');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(autoUpload ? { open: true, editing: null } : { open: false });
+  const [refreshing, startRefresh] = useTransition();
 
   const items = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -54,7 +56,7 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
   function done(message: string) {
     setModal({ open: false });
     toast(message);
-    router.refresh();
+    startRefresh(() => router.refresh());
   }
 
   return (
@@ -121,11 +123,8 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
           <label className="sr" htmlFor="gf">
             Filter gender
           </label>
-          <select id="gf" value={gender} onChange={(e) => setGender(e.target.value as 'all' | Gender)}>
-            <option value="all">Semua</option>
-            <option value="L">Laki-laki</option>
-            <option value="P">Perempuan</option>
-          </select>
+          <Select id="gf" value={gender} onChange={(v) => setGender(v as 'all' | Gender)}
+            options={[{ value: 'all', label: 'Semua' }, { value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
           <IconChevronDown size={16} />
         </div>
         <button type="button" className="btn primary upload" onClick={() => setModal({ open: true, editing: null })}>
@@ -142,7 +141,7 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
       </div>
 
       {items.length > 0 ? (
-        <div className="list">
+        <div className={refreshing ? 'list is-pending' : 'list'} aria-busy={refreshing}>
           {items.map((m) => (
             <button key={m.id} type="button" className="mcard" aria-label={`${m.name}, lihat detail`} onClick={() => setDetailId(m.id)}>
               <Avatar name={m.name} src={m.photoUrl} />
