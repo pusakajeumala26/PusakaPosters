@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
 import { useDialog } from '@/lib/use-dialog';
+import { ContactAdmin } from './ContactAdmin';
 import {
   IconBoard,
   IconClose,
@@ -51,6 +52,7 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
   const toast = useToast();
   const desktop = useIsDesktop();
   const [open, setOpen] = useState(false);
+  const [contactsOpen, setContactsOpen] = useState(false);
   const meta = PAGE_META[pathname] ?? PAGE_META['/'];
   const sub = pathname === '/' ? `Leting ${letingName}` : meta.sub;
 
@@ -58,6 +60,7 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
 
   const drawerOpen = open && !desktop;
   const sideRef = useDialog<HTMLElement>(() => setOpen(false), drawerOpen);
+  const contactsRef = useDialog<HTMLDivElement>(() => setContactsOpen(false), contactsOpen);
 
   async function logout() {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -138,6 +141,7 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
               Masuk sebagai admin
             </Link>
           )}
+          <button type="button" className="btn ghost block" onClick={() => setContactsOpen(true)}>Kontak pengurus</button>
         </div>
       </aside>
 
@@ -169,6 +173,14 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
           {children}
         </main>
       </div>
+      {contactsOpen && <div className="ov contact-overlay">
+        <button type="button" className="scrim" aria-label="Tutup kontak pengurus" tabIndex={-1} onClick={() => setContactsOpen(false)} />
+        <section ref={contactsRef} className="contact-dialog" role="dialog" aria-modal="true" aria-labelledby="contacts-title" tabIndex={-1}>
+          <div className="contact-dialog-head"><div><h2 id="contacts-title">Kontak pengurus</h2><p>Hubungi pengurus leting melalui WhatsApp.</p></div>
+            <button type="button" className="icon-btn" aria-label="Tutup" onClick={() => setContactsOpen(false)} data-autofocus><IconClose /></button></div>
+          <ContactAdmin />
+        </section>
+      </div>}
     </div>
   );
 }
