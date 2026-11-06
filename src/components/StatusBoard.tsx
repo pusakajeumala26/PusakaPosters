@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { formatWhen } from '@/lib/format';
 import { STATUS_META, type MemberView, type PosterStatus } from '@/lib/types';
 import { Avatar } from './Avatar';
@@ -12,6 +12,7 @@ export function StatusBoard({ members }: { members: MemberView[] }) {
   const router = useRouter();
   const toast = useToast();
   const [items, setItems] = useState(members);
+  const [refreshing, startRefresh] = useTransition();
 
   useEffect(() => setItems(members), [members]);
 
@@ -31,7 +32,7 @@ export function StatusBoard({ members }: { members: MemberView[] }) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? 'Status gagal diubah.');
       }
-      router.refresh();
+      startRefresh(() => router.refresh());
     } catch (e) {
       setItems(previous);
       toast(e instanceof Error ? e.message : 'Status gagal diubah.', 'error');
@@ -46,7 +47,7 @@ export function StatusBoard({ members }: { members: MemberView[] }) {
           <p>Geser kartu ke tahap berikutnya setelah posternya selesai.</p>
         </div>
       </div>
-      <div className="kan">
+      <div className={refreshing ? 'kan is-pending' : 'kan'} aria-busy={refreshing}>
         {STATUS_META.map((col, ci) => {
           const list = items.filter((m) => m.status === col.id);
           return (
