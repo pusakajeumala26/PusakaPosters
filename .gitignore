@@ -1,0 +1,32 @@
+node_modules
+.next
+out
+.env
+.env.local
+.env.*.local
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+.DS_Store
+desktop.ini
+
+# digenerate oleh scripts/copy-mediapipe.mjs saat npm install
+public/mediapipe
+
+# editor & OS
+.vscode/
+.idea/
+Thumbs.db
+*.log
+logs/
+coverage/
+*.ps1
+
+# Agents
+.agents/
+.claude/
+graphify-out/
+
+# Documentations
+docs/reports/
