@@ -1,0 +1,20 @@
+# Normalisasi line ending: simpan LF di repo
+* text=auto eol=lf
+
+# File biner (jangan diubah/di-diff sebagai teks)
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.ico  binary
+*.woff2 binary
+*.wasm binary
+*.tflite binary
+*.binarypb binary
+
+# Ringkas diff untuk file hasil generate
+package-lock.json -diff linguist-generated
+prisma/migrations/** linguist-generated=false
+
+# Sembunyikan aset dari statistik bahasa GitHub
+public/** linguist-vendored
