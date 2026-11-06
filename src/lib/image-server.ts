@@ -12,15 +12,16 @@ export async function normalizeToWebp(value: FormDataEntryValue | null, label: s
   if (value.size > MAX_FILE_BYTES) throw new HttpError(413, `${label} terlalu besar (maks. 4 MB).`);
 
   const input = Buffer.from(await value.arrayBuffer());
-  const opts = { failOn: 'error' as const, limitInputPixels: 40_000_000 };
+  const opts = { failOn: 'error' as const, limitInputPixels: 25_000_000 };
 
-  let meta: sharp.Metadata;
+  let meta: Awaited<ReturnType<ReturnType<typeof sharp>['metadata']>>;
   try {
     meta = await sharp(input, opts).metadata();
   } catch {
     throw new HttpError(422, `${label} bukan gambar yang valid.`);
   }
   if (!meta.width || !meta.height) throw new HttpError(422, `${label} bukan gambar yang valid.`);
+  if (!['jpeg', 'png', 'webp'].includes(meta.format ?? '')) throw new HttpError(422, `${label} bukan gambar yang valid.`);
   if ((meta.pages ?? 1) > 1) throw new HttpError(422, `${label} tidak boleh animasi.`);
 
   if (meta.format === 'webp' && Math.max(meta.width, meta.height) <= MAX_IMAGE_SIDE + 400) return input;
