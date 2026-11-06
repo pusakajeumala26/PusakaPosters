@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { COUNTRY_OPTIONS, QUOTE_MAX } from '@/lib/constants';
+import { toTitleCase } from '@/lib/format';
 import { processPhoto, STAGE_LABEL, type PhotoResult, type Stage } from '@/lib/photo';
 import { preloadSegmenter } from '@/lib/segment';
 import { useDialog } from '@/lib/use-dialog';
 import type { EditableMember, Gender, MemberView } from '@/lib/types';
 import { editMemberPassword, memberFields, newMemberPassword } from '@/lib/validation';
 import { IconAlert, IconChevronDown, IconClose, IconImage, IconLock } from './icons';
+import { Select } from './Select';
+import { ContactAdmin } from './ContactAdmin';
 
 export type EditingState = { member: MemberView; data: EditableMember; password?: string };
 
@@ -214,9 +217,10 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
               <IconLock size={22} />
               <div>
                 <b>Upload sedang ditutup</b>
-                <p>Panitia sudah menutup pengiriman data. Hubungi admin leting kalau kamu belum sempat upload.</p>
+                <p>Panitia sudah menutup pengiriman data. Hubungi pengurus kalau kamu belum sempat upload.</p>
               </div>
             </div>
+            <ContactAdmin compact />
             <div className="dlg-f">
               <button type="button" className="btn primary" onClick={onClose} data-autofocus>
                 Mengerti
@@ -246,6 +250,7 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
                   placeholder="Sesuai yang ingin ditulis di poster"
                   value={f.name}
                   onChange={(e) => set('name', e.target.value)}
+                  onBlur={() => set('name', toTitleCase(f.name))}
                   aria-invalid={inv('name')}
                   aria-describedby={desc('name')}
                 />
@@ -261,13 +266,8 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
                     <label className="sr" htmlFor="f-cc">
                       Kode negara
                     </label>
-                    <select id="f-cc" className="inp" value={f.cc} onChange={(e) => set('cc', e.target.value)}>
-                      {COUNTRY_OPTIONS.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
+                    <Select id="f-cc" value={f.cc} onChange={(v) => set('cc', v)} searchable searchLabel="Cari kode negara"
+                      options={COUNTRY_OPTIONS.map((c) => ({ value: c.code, label: c.label, searchText: c.code }))} />
                     <IconChevronDown className="chev" size={16} />
                   </div>
                   <input
@@ -316,19 +316,12 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
                   Gender
                 </label>
                 <div className="rel">
-                  <select
+                  <Select
                     id="f-gender"
-                    data-field="gender"
-                    className="inp"
                     value={f.gender}
-                    onChange={(e) => set('gender', e.target.value as Gender | '')}
-                    aria-invalid={inv('gender')}
-                    aria-describedby={desc('gender')}
-                  >
-                    <option value="">Pilih gender</option>
-                    <option value="L">Laki-laki</option>
-                    <option value="P">Perempuan</option>
-                  </select>
+                    onChange={(v) => set('gender', v as Gender | '')}
+                    dataField="gender" invalid={!!errors.gender} describedBy={desc('gender')}
+                    options={[{ value: '', label: 'Pilih gender' }, { value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
                   <IconChevronDown className="chev" size={16} />
                 </div>
                 <FieldError id="err-gender" message={errors.gender} />
