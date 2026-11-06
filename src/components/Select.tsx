@@ -2,6 +2,7 @@
 
 import { createPortal } from 'react-dom';
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { IconChevronDown } from './icons';
 
 export type SelectOption = { value: string; label: string; searchText?: string };
 type Props = {
@@ -125,7 +126,8 @@ export function Select({
       data-field={dataField}
       aria-haspopup="listbox" aria-controls={`${uid}-listbox`} aria-expanded={open} aria-activedescendant={open && activeOption ? `${uid}-option-${activeOption.value}` : undefined}
       aria-describedby={describedBy} aria-invalid={invalid} disabled={disabled} onClick={() => setOpen((v) => !v)} onKeyDown={onKeyDown}>
-      <span>{options.find((o) => o.value === value)?.label ?? 'Pilih'}</span><span aria-hidden="true" className="select-chevron">⌄</span>
+      <span className="select-label">{options.find((o) => o.value === value)?.label ?? 'Pilih'}</span>
+      <span aria-hidden="true" className="select-chevron"><IconChevronDown size={16} /></span>
     </button>{panel}
   </>;
 }
