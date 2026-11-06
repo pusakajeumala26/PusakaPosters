@@ -77,7 +77,7 @@ export function MemberSheet({ member, admin, onClose, onEdit }: Props) {
           <div className="portrait">
             {shown && !imgFailed ? (
               // eslint-disable-next-line @next/next/no-img-element -- signed URL dinamis dari Supabase
-              <img src={shown} alt={`Foto ${member.name}`} onError={() => setImgFailed(true)} />
+              <img className="image-pending" src={shown} alt={`Foto ${member.name}`} onLoad={(e) => e.currentTarget.classList.replace('image-pending', 'image-loaded')} onError={() => setImgFailed(true)} />
             ) : (
               <Avatar name={member.name} src={null} />
             )}
