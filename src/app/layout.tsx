@@ -24,6 +24,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <head><link rel="preload" as="image" href="/images/logo.svg" /></head>
       <body>
         <ToastProvider>
           {children}
