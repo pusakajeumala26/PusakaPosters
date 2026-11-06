@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
 import { useDialog } from '@/lib/use-dialog';
+import { usePwaInstall } from '@/lib/pwa';
 import { ContactAdmin } from './ContactAdmin';
 import {
   IconBoard,
   IconClose,
+  IconDownload,
   IconGallery,
   IconHome,
   IconLock,
@@ -50,9 +53,11 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
   const pathname = usePathname();
   const router = useRouter();
   const toast = useToast();
+  const { canInstall, canPrompt, installed, iosSafari, install } = usePwaInstall();
   const desktop = useIsDesktop();
   const [open, setOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
+  const [iosHelpOpen, setIosHelpOpen] = useState(false);
   const meta = PAGE_META[pathname] ?? PAGE_META['/'];
   const sub = pathname === '/' ? `Leting ${letingName}` : meta.sub;
 
@@ -61,11 +66,31 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
   const drawerOpen = open && !desktop;
   const sideRef = useDialog<HTMLElement>(() => setOpen(false), drawerOpen);
   const contactsRef = useDialog<HTMLDivElement>(() => setContactsOpen(false), contactsOpen);
+  const iosHelpRef = useDialog<HTMLDivElement>(() => setIosHelpOpen(false), iosHelpOpen);
+  const wasInstalled = useRef(installed);
+
+  useEffect(() => {
+    if (installed && !wasInstalled.current) {
+      setOpen(false);
+      setIosHelpOpen(false);
+      setContactsOpen(false);
+      toast('Aplikasi berhasil dipasang');
+    }
+    wasInstalled.current = installed;
+  }, [installed, toast]);
 
   async function logout() {
     await fetch('/api/admin/logout', { method: 'POST' });
     toast('Keluar dari mode admin');
     router.refresh();
+  }
+
+  async function onInstall() {
+    if (iosSafari && !canPrompt) {
+      setIosHelpOpen(true);
+      return;
+    }
+    await install();
   }
 
   const navClass = (href: string) => (pathname === href ? 'nav is-active' : 'nav');
@@ -124,6 +149,10 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
         </nav>
 
         <div className="side-foot">
+          {canInstall && !installed && <button type="button" className="btn ghost block" onClick={onInstall}>
+            <IconDownload size={18} />
+            Instal aplikasi
+          </button>}
           {admin ? (
             <>
               <div className="adm">
@@ -181,6 +210,15 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
           <ContactAdmin />
         </section>
       </div>}
+      {iosHelpOpen && typeof document !== 'undefined' && createPortal(<div className="ov install-overlay">
+        <button type="button" className="scrim" aria-label="Tutup petunjuk instal" tabIndex={-1} onClick={() => setIosHelpOpen(false)} />
+        <section ref={iosHelpRef} className="install-dialog" role="dialog" aria-modal="true" aria-labelledby="install-title" tabIndex={-1}>
+          <div className="contact-dialog-head"><div><h2 id="install-title">Instal PusakaPosters</h2>
+            <p>Ketuk Bagikan, lalu Tambahkan ke Layar Utama.</p></div>
+            <button type="button" className="icon-btn" aria-label="Tutup" onClick={() => setIosHelpOpen(false)} data-autofocus><IconClose /></button></div>
+          <button type="button" className="btn primary block" onClick={() => setIosHelpOpen(false)}>Mengerti</button>
+        </section>
+      </div>, document.body)}
     </div>
   );
 }
