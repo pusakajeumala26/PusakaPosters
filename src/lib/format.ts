@@ -8,6 +8,17 @@ export const initials = (name: string) => {
   return ((p[0]?.[0] ?? '') + (p[1]?.[0] ?? '')).toUpperCase();
 };
 
+/** Normalize a person's name for display and storage using Indonesian casing rules. */
+export function toTitleCase(name: string): string {
+  return name
+    .trim()
+    .replace(/\s+/gu, ' ')
+    .toLocaleLowerCase('id')
+    .replace(/(^|[\s'-])(\p{L})/gu, (_match, separator: string, letter: string) =>
+      separator + letter.toLocaleUpperCase('id'),
+    );
+}
+
 export const fmtPhone = (digits: string) => digits.replace(/(\d{3,4})(?=\d)/g, '$1 ').trim();
 
 export const maskPhone = (countryCode: string, digits: string) => `${countryCode} •••• ${digits.slice(-4)}`;
