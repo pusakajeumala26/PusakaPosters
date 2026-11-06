@@ -1,10 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, useTransition, type FormEvent } from 'react';
 import { usePwaInstall } from '@/lib/pwa';
 import type { MemberView, SettingsView as SettingsData } from '@/lib/types';
 import { downloadPhotosZip } from '@/lib/zip-client';
+import { DatePicker } from './DatePicker';
 import { useToast } from './ToastProvider';
 
 async function patch(url: string, body: unknown, method = 'PATCH') {
@@ -24,6 +25,7 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
   const [newPw, setNewPw] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [offlineReady, setOfflineReady] = useState(false);
+  const [refreshing, startRefresh] = useTransition();
 
   useEffect(() => {
     setLeting(settings.letingName);
@@ -41,7 +43,7 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
     try {
       const message = await fn();
       if (message) toast(message);
-      router.refresh();
+      startRefresh(() => router.refresh());
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Terjadi kesalahan.', 'error');
     } finally {
@@ -90,7 +92,7 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
   }
 
   return (
-    <div className="sets">
+    <div className={refreshing ? 'sets is-pending' : 'sets'} aria-busy={refreshing}>
       <form className="card" onSubmit={saveGeneral}>
         <h3>Leting</h3>
         <p>Dipakai di topbar dan tracking card.</p>
@@ -105,22 +107,25 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
             <label className="lbl" htmlFor="s-tg">
               Target anggota
             </label>
+            <div className="number-control">
+            <button type="button" className="stepper" aria-label="Kurangi target anggota" onClick={() => setTarget((n) => String(Math.max(1, Number(n || 1) - 1)))}>−</button>
             <input
               id="s-tg"
               className="inp num"
-              type="number"
-              min={1}
-              max={5000}
+              type="text"
               inputMode="numeric"
+              pattern="[0-9]*"
               value={target}
               onChange={(e) => setTarget(e.target.value)}
             />
+            <button type="button" className="stepper" aria-label="Tambah target anggota" onClick={() => setTarget((n) => String(Math.min(5000, Number(n || 0) + 1)))}>+</button>
+            </div>
           </div>
           <div className="field">
             <label className="lbl" htmlFor="s-dl">
               Tenggat upload
             </label>
-            <input id="s-dl" className="inp" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+            <DatePicker id="s-dl" value={deadline} onChange={setDeadline} />
           </div>
         </div>
         <button type="submit" className="btn primary" disabled={!!busy}>
