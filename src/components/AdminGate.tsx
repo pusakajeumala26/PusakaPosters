@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { IconAlert, IconLock } from './icons';
 import { useToast } from './ToastProvider';
+import { ContactAdmin } from './ContactAdmin';
 
 export function AdminGate({ pageName }: { pageName: string }) {
   const router = useRouter();
@@ -11,6 +12,7 @@ export function AdminGate({ pageName }: { pageName: string }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showContacts, setShowContacts] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -73,6 +75,9 @@ export function AdminGate({ pageName }: { pageName: string }) {
           {busy ? 'Memeriksa…' : 'Buka halaman'}
         </button>
       </form>
+      <p className="contact-hint">Lupa password admin? <button type="button" className="text-btn" aria-expanded={showContacts}
+        onClick={() => setShowContacts((v) => !v)}>Hubungi pengurus</button></p>
+      {showContacts && <ContactAdmin compact />}
     </div>
   );
 }
