@@ -5,7 +5,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { formatWhen } from '@/lib/format';
 import type { EditableMember, Gender, MemberView, Stats } from '@/lib/types';
 import { Avatar } from './Avatar';
-import { IconChevronDown, IconChevronRight, IconSearch, IconSort, IconUpload } from './icons';
+import { IconChevronRight, IconSearch, IconSort, IconUpload } from './icons';
 import { MemberSheet } from './MemberSheet';
 import { useToast } from './ToastProvider';
 import { UploadModal, type EditingState } from './UploadModal';
@@ -125,7 +125,6 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
           </label>
           <Select id="gf" value={gender} onChange={(v) => setGender(v as 'all' | Gender)}
             options={[{ value: 'all', label: 'Semua' }, { value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
-          <IconChevronDown size={16} />
         </div>
         <button type="button" className="btn primary upload" onClick={() => setModal({ open: true, editing: null })}>
           <IconUpload />
