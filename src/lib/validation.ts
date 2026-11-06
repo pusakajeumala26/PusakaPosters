@@ -9,7 +9,7 @@ export const memberFields = z.object({
   name: z.string().transform(toTitleCase).pipe(
     z.string().min(3, 'Tulis nama lengkap, minimal 3 huruf.').max(80, 'Nama terlalu panjang (maks. 80 huruf).'),
   ),
-  countryCode: z.enum(COUNTRY_CODES, { errorMap: () => ({ message: 'Pilih kode negara.' }) }),
+  countryCode: z.enum(COUNTRY_CODES, { error: 'Pilih kode negara.' }),
   phone: z
     .string()
     .transform(normalizePhone)
@@ -24,7 +24,7 @@ export const memberFields = z.object({
     .trim()
     .min(1, 'Tulis satu kalimat untuk posternya.')
     .max(QUOTE_MAX, `Maksimal ${QUOTE_MAX} karakter.`),
-  gender: z.enum(['L', 'P'], { errorMap: () => ({ message: 'Pilih gender.' }) }),
+  gender: z.enum(['L', 'P'], { error: 'Pilih gender.' }),
 });
 
 export const newMemberPassword = z
