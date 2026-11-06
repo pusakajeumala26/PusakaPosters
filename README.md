@@ -67,6 +67,10 @@ npm run dev
 `manifest.ts`, `public/sw.js` (halaman offline, cache aset statis & model; tidak pernah men-cache `/api` atau foto), tombol Install hanya di Pengaturan.
 Service worker aktif hanya pada build production (`npm run build && npm start`).
 
+## Maintenance
+
+Nama anggota baru otomatis disimpan dalam Title Case. Untuk merapikan data yang sudah ada, jalankan `node scripts/normalize-names.mjs --dry-run` untuk melihat perubahan terlebih dahulu, lalu `node scripts/normalize-names.mjs` untuk memperbarui nama di database. Script hanya mengubah kolom nama; folder foto tidak berubah.
+
 ## Catatan penting
 
 Kode ini ditulis tanpa bisa menjalankan `npm install`/`next build` (registry diblokir di lingkungan penulisan), jadi **belum diuji end-to-end**. Periksa lebih dulu:
