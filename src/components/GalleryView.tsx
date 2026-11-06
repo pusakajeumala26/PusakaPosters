@@ -77,7 +77,7 @@ export function GalleryView({ members }: { members: MemberView[] }) {
               <span className={m.hasCutout ? 'ph checker' : 'ph'} aria-hidden="true">
                 {m.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- signed URL dinamis dari Supabase
-                  <img src={m.photoUrl} alt="" loading="lazy" decoding="async" />
+                  <img className="image-pending" src={m.photoUrl} alt="" loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.replace('image-pending', 'image-loaded')} />
                 ) : (
                   initials(m.name)
                 )}
