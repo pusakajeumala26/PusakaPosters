@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition, type FormEvent } from 'react';
-import { usePwaInstall } from '@/lib/pwa';
 import type { MemberView, SettingsView as SettingsData } from '@/lib/types';
 import { downloadPhotosZip } from '@/lib/zip-client';
 import { DatePicker } from './DatePicker';
@@ -17,14 +16,12 @@ async function patch(url: string, body: unknown, method = 'PATCH') {
 export function SettingsView({ settings, members }: { settings: SettingsData; members: MemberView[] }) {
   const router = useRouter();
   const toast = useToast();
-  const { canPrompt, installed, install } = usePwaInstall();
 
   const [leting, setLeting] = useState(settings.letingName);
   const [target, setTarget] = useState(String(settings.target));
   const [deadline, setDeadline] = useState(settings.deadline);
   const [newPw, setNewPw] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
-  const [offlineReady, setOfflineReady] = useState(false);
   const [refreshing, startRefresh] = useTransition();
 
   useEffect(() => {
@@ -32,10 +29,6 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
     setTarget(String(settings.target));
     setDeadline(settings.deadline);
   }, [settings]);
-
-  useEffect(() => {
-    setOfflineReady(!!navigator.serviceWorker?.controller);
-  }, []);
 
   async function run(key: string, fn: () => Promise<string | void>) {
     if (busy) return;
@@ -83,13 +76,6 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
       const n = await downloadPhotosZip(members);
       return `${n} file masuk ZIP`;
     });
-
-  async function onInstall() {
-    const outcome = await install();
-    if (outcome === 'accepted') toast('Aplikasi dipasang');
-    else if (outcome === 'ios') toast('Di iPhone: buka menu Bagikan, lalu pilih Tambah ke Layar Utama.');
-    else if (outcome === 'manual') toast('Buka menu browser, lalu pilih Instal aplikasi.');
-  }
 
   return (
     <div className={refreshing ? 'sets is-pending' : 'sets'} aria-busy={refreshing}>
@@ -188,26 +174,6 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
         </button>
       </form>
 
-      <section className="card">
-        <h3>Aplikasi</h3>
-        <p>Pasang PusakaPosters di layar utama agar terbuka seperti aplikasi biasa.</p>
-        <div className="switch-row">
-          <div>
-            <b>Mode offline</b>
-            <span>Tampilan aplikasi tetap terbuka tanpa sinyal. Upload dan data butuh internet.</span>
-          </div>
-          <span className={offlineReady ? 'chip chip-posting' : 'chip'}>{offlineReady ? 'Aktif' : 'Belum aktif'}</span>
-        </div>
-        {installed ? (
-          <span className="chip chip-posting" style={{ alignSelf: 'flex-start' }}>
-            Sudah terpasang
-          </span>
-        ) : (
-          <button type="button" className="btn primary" onClick={onInstall}>
-            {canPrompt ? 'Instal aplikasi' : 'Cara instal aplikasi'}
-          </button>
-        )}
-      </section>
     </div>
   );
 }
