@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Gender {
+  L
+  P
+}
+
+enum PosterStatus {
+  MASUK
+  DESAIN
+  SIAP
+  POSTING
+}
+
+model Member {
+  id           String       @id @default(uuid())
+  name         String
+  /// Nama folder di Supabase Storage: "<slug-nama>-<8 huruf id>"
+  folder       String       @unique
+  countryCode  String
+  /// Hanya digit, tanpa nol di depan dan tanpa kode negara
+  phone        String
+  quote        String
+  gender       Gender
+  passwordHash String
+  /// Path di bucket, mis. "nurul-aini-safira-1a2b3c4d/original.webp"
+  originalPath String?
+  cutoutPath   String?
+  status       PosterStatus @default(MASUK)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([countryCode, phone])
+  @@index([createdAt])
+  @@index([status])
+}
+
+/// Baris tunggal (id = 1)
+model Setting {
+  id                Int       @id @default(1)
+  letingName        String    @default("Pusaka Jeumala")
+  target            Int       @default(120)
+  deadline          DateTime?
+  uploadOpen        Boolean   @default(true)
+  adminPasswordHash String?
+  /// Dinaikkan setiap password admin diganti, supaya sesi lama tidak berlaku
+  adminPwVersion    Int       @default(0)
+}
