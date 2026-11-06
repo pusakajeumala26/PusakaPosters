@@ -8,7 +8,7 @@ import { preloadSegmenter } from '@/lib/segment';
 import { useDialog } from '@/lib/use-dialog';
 import type { EditableMember, Gender, MemberView } from '@/lib/types';
 import { editMemberPassword, memberFields, newMemberPassword } from '@/lib/validation';
-import { IconAlert, IconChevronDown, IconClose, IconImage, IconLock } from './icons';
+import { IconAlert, IconClose, IconImage, IconLock } from './icons';
 import { Select } from './Select';
 import { ContactAdmin } from './ContactAdmin';
 
@@ -268,7 +268,6 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
                     </label>
                     <Select id="f-cc" value={f.cc} onChange={(v) => set('cc', v)} searchable searchLabel="Cari kode negara"
                       options={COUNTRY_OPTIONS.map((c) => ({ value: c.code, label: c.label, searchText: c.code }))} />
-                    <IconChevronDown className="chev" size={16} />
                   </div>
                   <input
                     id="f-phone"
@@ -322,7 +321,6 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
                     onChange={(v) => set('gender', v as Gender | '')}
                     dataField="gender" invalid={!!errors.gender} describedBy={desc('gender')}
                     options={[{ value: '', label: 'Pilih gender' }, { value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
-                  <IconChevronDown className="chev" size={16} />
                 </div>
                 <FieldError id="err-gender" message={errors.gender} />
               </div>
