@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useEffect, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
 import { useDialog } from '@/lib/use-dialog';
+import { usePresence } from '@/lib/use-presence';
 import { usePwaInstall } from '@/lib/pwa';
 import { ContactAdmin } from './ContactAdmin';
 import {
@@ -65,9 +66,11 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
   useEffect(() => setOpen(false), [pathname]);
 
   const drawerOpen = open && !desktop;
+  const contactsPresence = usePresence(contactsOpen, 340);
+  const iosHelpPresence = usePresence(iosHelpOpen, 340);
   const sideRef = useDialog<HTMLElement>(() => setOpen(false), drawerOpen);
-  const contactsRef = useDialog<HTMLDivElement>(() => setContactsOpen(false), contactsOpen);
-  const iosHelpRef = useDialog<HTMLDivElement>(() => setIosHelpOpen(false), iosHelpOpen);
+  const contactsRef = useDialog<HTMLDivElement>(() => setContactsOpen(false), contactsOpen && contactsPresence.present);
+  const iosHelpRef = useDialog<HTMLDivElement>(() => setIosHelpOpen(false), iosHelpOpen && iosHelpPresence.present);
   const wasInstalled = useRef(installed);
 
   useEffect(() => {
@@ -103,9 +106,8 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
         Lewati ke konten
       </a>
 
-      {drawerOpen && (
-        <button type="button" className="scrim d-scrim" aria-label="Tutup menu" tabIndex={-1} onClick={() => setOpen(false)} />
-      )}
+      <button type="button" className={`scrim d-scrim${drawerOpen ? ' is-open' : ''}`} aria-label="Tutup menu"
+        aria-hidden={!drawerOpen} inert={!drawerOpen} tabIndex={-1} onClick={() => setOpen(false)} />
 
       <aside
         ref={sideRef}
@@ -203,7 +205,7 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
           {children}
         </main>
       </div>
-      {contactsOpen && <div className="ov contact-overlay">
+      {contactsPresence.present && <div className="ov contact-overlay" data-state={contactsPresence.phase} aria-hidden={!contactsOpen} inert={!contactsOpen}>
         <button type="button" className="scrim" aria-label="Tutup kontak pengurus" tabIndex={-1} onClick={() => setContactsOpen(false)} />
         <section ref={contactsRef} className="contact-dialog" role="dialog" aria-modal="true" aria-labelledby="contacts-title" tabIndex={-1}>
           <div className="contact-dialog-head"><div><h2 id="contacts-title">Kontak pengurus</h2><p>Hubungi pengurus leting melalui WhatsApp.</p></div>
@@ -211,7 +213,7 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
           <ContactAdmin />
         </section>
       </div>}
-      {iosHelpOpen && typeof document !== 'undefined' && createPortal(<div className="ov install-overlay">
+      {iosHelpPresence.present && typeof document !== 'undefined' && createPortal(<div className="ov install-overlay" data-state={iosHelpPresence.phase} aria-hidden={!iosHelpOpen} inert={!iosHelpOpen}>
         <button type="button" className="scrim" aria-label="Tutup petunjuk instal" tabIndex={-1} onClick={() => setIosHelpOpen(false)} />
         <section ref={iosHelpRef} className="install-dialog" role="dialog" aria-modal="true" aria-labelledby="install-title" tabIndex={-1}>
           <div className="contact-dialog-head"><div><h2 id="install-title">Instal PusakaPosters</h2>
