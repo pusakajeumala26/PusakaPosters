@@ -6,7 +6,7 @@ import { toTitleCase } from '@/lib/format';
 import { processPhoto, STAGE_LABEL, type PhotoResult, type Stage } from '@/lib/photo';
 import { preloadSegmenter } from '@/lib/segment';
 import { useDialog } from '@/lib/use-dialog';
-import type { EditableMember, Gender, MemberView } from '@/lib/types';
+import { GENDER_LABELS, type EditableMember, type Gender, type MemberView } from '@/lib/types';
 import type { PresencePhase } from '@/lib/use-presence';
 import { editMemberPassword, memberFields, newMemberPassword } from '@/lib/validation';
 import { IconAlert, IconClose, IconImage, IconLock } from './icons';
@@ -296,7 +296,7 @@ export function UploadModal({ open, presence, editing, admin, uploadOpen, onClos
                     value={f.gender}
                     onChange={(v) => set('gender', v as Gender | '')}
                     dataField="gender" invalid={!!errors.gender} describedBy={desc('gender')}
-                    options={[{ value: '', label: 'Pilih gender' }, { value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
+                    options={[{ value: '', label: 'Pilih gender' }, { value: 'L', label: GENDER_LABELS.L }, { value: 'P', label: GENDER_LABELS.P }]} />
                 </div>
                 <FieldError id="err-gender" message={errors.gender} />
               </div>
