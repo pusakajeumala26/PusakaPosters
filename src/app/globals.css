@@ -1383,6 +1383,41 @@ textarea.inp {
   font-size: 13px;
   color: var(--mute);
 }
+.security-lock-card {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 18px;
+  background: var(--ink);
+  color: #fff;
+  text-align: center;
+}
+.security-lock-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 320px;
+}
+.security-lock-message strong { font-size: 16px; }
+.security-lock-card .btn {
+  min-height: 44px;
+  background: #fff;
+  border-color: #fff;
+  color: var(--ink);
+}
+.security-lock-card .btn:hover { background: #ededed; }
+.security-unlock-form { width: min(100%, 360px); display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.security-unlock-form .lbl { color: #fff; }
+.security-unlock-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.security-unlock-actions .btn { padding: 0 14px; }
+.security-error { margin: 0; color: #ffb4ab; font-size: 13px; }
+.security-unlocked { display: flex; flex-direction: column; gap: 10px; }
+.security-unlocked form { display: flex; flex-direction: column; gap: 14px; }
 .switch-row {
   display: flex;
   align-items: center;
