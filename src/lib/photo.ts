@@ -1,13 +1,22 @@
 import { MAX_IMAGE_SIDE, MAX_INPUT_BYTES, MAX_UPLOAD_TOTAL_BYTES } from './constants';
+import { refinePersonMask } from './cutout-refinement';
 import { NoPersonError, getSegmenter, segmentPerson } from './segment';
 
-export type Stage = 'baca' | 'model' | 'latar' | 'webp';
+export type Stage = 'baca' | 'model' | 'latar' | 'png';
+
+/** Tuning knobs for edge cleanup. Radii are scaled to the decoded image size. */
+export const CUTOUT_REFINEMENT_CONFIG = {
+  localRadius: 4,
+  backgroundVarianceLimit: 900,
+  despillTolerance: 14,
+  choke: 0.035,
+} as const;
 
 export const STAGE_LABEL: Record<Stage, string> = {
   baca: 'Membaca foto…',
   model: 'Memuat model (hanya pertama kali)…',
   latar: 'Menghapus latar belakang…',
-  webp: 'Mengubah ke WebP…',
+  png: 'Menyimpan cutout PNG…',
 };
 
 export type PhotoResult = {
@@ -53,53 +62,28 @@ async function decode(file: File): Promise<HTMLCanvasElement> {
   }
 }
 
-const smoothstep = (edge0: number, edge1: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
-  return t * t * (3 - 2 * t);
-};
-
-/** Tempel peta keyakinan orang sebagai kanal alpha pada foto. */
+/** Refinement probabilitas, pemisahan foreground/background, lalu alpha straight. */
 function applyPersonMask(src: HTMLCanvasElement, mask: ImageData): HTMLCanvasElement {
   const { width: w, height: h } = src;
-
-  // MediaPipe menyimpan keyakinan di kanal alpha; kalau alpha rata, pakai kanal merah.
-  let minA = 255;
-  let maxA = 0;
-  for (let i = 3; i < mask.data.length; i += 4) {
-    const a = mask.data[i];
-    if (a < minA) minA = a;
-    if (a > maxA) maxA = a;
-  }
-  const channel = maxA - minA > 16 ? 3 : 0;
-
-  const small = canvasOf(mask.width, mask.height);
-  small.getContext('2d')!.putImageData(mask, 0, 0);
-  const scaled = canvasOf(w, h);
-  const sctx = scaled.getContext('2d', { willReadFrequently: true })!;
-  sctx.imageSmoothingEnabled = true;
-  sctx.imageSmoothingQuality = 'high';
-  sctx.drawImage(small, 0, 0, w, h);
-  const m = sctx.getImageData(0, 0, w, h).data;
-
   const out = canvasOf(w, h);
   const octx = out.getContext('2d', { willReadFrequently: true })!;
-  const img = src.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, w, h);
+  const source = src.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, w, h);
+  const img = refinePersonMask(source, mask, CUTOUT_REFINEMENT_CONFIG);
   let covered = 0;
   for (let i = 0; i < w * h; i++) {
-    const a = smoothstep(0.35, 0.65, m[i * 4 + channel] / 255);
+    const a = img.data[i * 4 + 3] / 255;
     if (a > 0.5) covered++;
-    img.data[i * 4 + 3] = Math.round(a * 255);
   }
   if (covered / (w * h) < 0.02) throw new NoPersonError();
   octx.putImageData(img, 0, 0);
   return out;
 }
 
-function toBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+function toBlob(canvas: HTMLCanvasElement, type: 'image/webp' | 'image/png', quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error('Gagal mengubah foto ke WebP.'))),
-      'image/webp',
+      (b) => (b ? resolve(b) : reject(new Error(`Gagal mengubah foto ke ${type === 'image/png' ? 'PNG' : 'WebP'}.`))),
+      type,
       quality,
     );
   });
@@ -113,14 +97,16 @@ function downscale(canvas: HTMLCanvasElement, factor: number): HTMLCanvasElement
   return out;
 }
 
-/** Encode WebP; perkecil bertahap jika total ukuran melebihi batas body request. */
+/** Foto asli tetap WebP; cutout disimpan PNG alpha lurus. Canvas drawImage memakai resampling alpha-aware. */
 async function encodePair(original: HTMLCanvasElement, cutout: HTMLCanvasElement | null) {
   let o = original;
   let c = cutout;
   let q = 0.88;
   for (let attempt = 0; ; attempt++) {
-    const [ob, cb] = await Promise.all([toBlob(o, q), c ? toBlob(c, q) : Promise.resolve(null)]);
-    if (ob.size + (cb?.size ?? 0) <= MAX_UPLOAD_TOTAL_BYTES || attempt >= 4) return { ob, cb };
+    const [ob, cb] = await Promise.all([toBlob(o, 'image/webp', q), c ? toBlob(c, 'image/png') : Promise.resolve(null)]);
+    const withinLimits = ob.size + (cb?.size ?? 0) <= MAX_UPLOAD_TOTAL_BYTES && ob.size <= 4 * 1024 * 1024 && (!cb || cb.size <= 4 * 1024 * 1024);
+    if (withinLimits) return { ob, cb };
+    if (attempt >= 4) throw new Error('Ukuran hasil cutout masih terlalu besar. Gunakan foto dengan resolusi lebih kecil.');
     o = downscale(o, 0.8);
     if (c) c = downscale(c, 0.8);
     q = Math.max(0.7, q - 0.05);
@@ -151,7 +137,7 @@ export async function processPhoto(file: File, onStage: (s: Stage) => void = () 
         : 'Penghapusan latar belakang gagal di perangkat ini. Foto asli tetap bisa dikirim.';
   }
 
-  onStage('webp');
+  onStage('png');
   const { ob, cb } = await encodePair(source, cutoutCanvas);
   return {
     original: ob,
