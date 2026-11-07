@@ -56,7 +56,6 @@ export function MemberSheet({ member, admin, onClose, onEdit }: Props) {
       name: member.name,
       countryCode: member.countryCode,
       phone: member.phone ?? '',
-      quote: member.quote,
       gender: member.gender,
     });
   }
@@ -99,7 +98,7 @@ export function MemberSheet({ member, admin, onClose, onEdit }: Props) {
             <p suppressHydrationWarning>Diupload {formatWhen(member.createdAt)}</p>
           </div>
 
-          <blockquote className="quote">“{member.quote}”</blockquote>
+          {member.quote && <blockquote className="quote">“{member.quote}”</blockquote>}
 
           <dl className="dl">
             <dt>Gender</dt>
