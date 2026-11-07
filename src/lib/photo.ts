@@ -10,6 +10,7 @@ export const CUTOUT_REFINEMENT_CONFIG = {
   backgroundVarianceLimit: 900,
   despillTolerance: 14,
   choke: 0.035,
+  minVisibleAlpha: 0.06,
 } as const;
 
 export const STAGE_LABEL: Record<Stage, string> = {
