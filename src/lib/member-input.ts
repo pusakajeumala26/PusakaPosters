@@ -7,7 +7,6 @@ export function parseMemberFields(form: FormData) {
     name: formString(form.get('name')),
     countryCode: formString(form.get('countryCode')),
     phone: formString(form.get('phone')),
-    quote: formString(form.get('quote')),
     gender: formString(form.get('gender')),
   });
   if (!r.success) throw new HttpError(422, r.error.issues[0]?.message ?? 'Data tidak valid.');
