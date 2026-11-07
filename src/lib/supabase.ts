@@ -18,11 +18,18 @@ function ensureBucket(): Promise<void> {
   bucketReady ??= (async () => {
     const s = storage();
     const { data } = await s.getBucket(BUCKET);
-    if (data) return;
+    if (data) {
+      const allowed = data.allowed_mime_types ?? ['image/webp'];
+      if (!allowed.includes('image/png')) {
+        const { error } = await s.updateBucket(BUCKET, { public: data.public, allowedMimeTypes: [...allowed, 'image/png'] });
+        if (error) throw new Error(`Bucket gagal diperbarui: ${error.message}`);
+      }
+      return;
+    }
     const { error } = await s.createBucket(BUCKET, {
       public: false,
       fileSizeLimit: 5 * 1024 * 1024,
-      allowedMimeTypes: ['image/webp'],
+      allowedMimeTypes: ['image/webp', 'image/png'],
     });
     if (error && !/already exists/i.test(error.message)) throw new Error(`Bucket gagal dibuat: ${error.message}`);
   })().catch((e) => {
@@ -36,6 +43,16 @@ export async function uploadWebp(path: string, data: Buffer) {
   await ensureBucket();
   const { error } = await storage().from(BUCKET).upload(path, data, {
     contentType: 'image/webp',
+    upsert: true,
+    cacheControl: '3600',
+  });
+  if (error) throw new Error(`Upload ke storage gagal: ${error.message}`);
+}
+
+export async function uploadPng(path: string, data: Buffer) {
+  await ensureBucket();
+  const { error } = await storage().from(BUCKET).upload(path, data, {
+    contentType: 'image/png',
     upsert: true,
     cacheControl: '3600',
   });
