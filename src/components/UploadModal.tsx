@@ -7,6 +7,7 @@ import { processPhoto, STAGE_LABEL, type PhotoResult, type Stage } from '@/lib/p
 import { preloadSegmenter } from '@/lib/segment';
 import { useDialog } from '@/lib/use-dialog';
 import type { EditableMember, Gender, MemberView } from '@/lib/types';
+import type { PresencePhase } from '@/lib/use-presence';
 import { editMemberPassword, memberFields, newMemberPassword } from '@/lib/validation';
 import { IconAlert, IconClose, IconImage, IconLock } from './icons';
 import { Select } from './Select';
@@ -18,6 +19,8 @@ type Field = 'name' | 'phone' | 'gender' | 'pw' | 'photo';
 type Errors = Partial<Record<Field, string>>;
 
 type Props = {
+  open: boolean;
+  presence: PresencePhase;
   editing: EditingState | null;
   admin: boolean;
   uploadOpen: boolean;
@@ -35,8 +38,8 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   );
 }
 
-export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Props) {
-  const ref = useDialog<HTMLFormElement>(onClose);
+export function UploadModal({ open, presence, editing, admin, uploadOpen, onClose, onDone }: Props) {
+  const ref = useDialog<HTMLFormElement>(onClose, open);
   const isEdit = !!editing;
   const closed = !uploadOpen && !isEdit;
 
@@ -190,7 +193,7 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
   const desc = (k: Field) => (errors[k] ? `err-${k}` : undefined);
 
   return (
-    <div className="ov">
+    <div className="ov" data-state={presence} aria-hidden={!open} inert={!open}>
       <button type="button" className="scrim" aria-label="Tutup form" tabIndex={-1} onClick={onClose} />
       <form ref={ref} className="dlg" role="dialog" aria-modal="true" aria-labelledby="up-title" tabIndex={-1} onSubmit={submit} noValidate>
         <div className="grab" aria-hidden="true" />
