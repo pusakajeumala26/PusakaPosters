@@ -2,10 +2,12 @@
 export type RefinementOptions = {
   erodeRadius?: number;
   dilateRadius?: number;
+  edgeBandRadius?: number;
   localRadius?: number;
   backgroundVarianceLimit?: number;
   despillTolerance?: number;
   choke?: number;
+  minVisibleAlpha?: number;
 };
 
 const clamp = (value: number, low = 0, high = 1) => Math.max(low, Math.min(high, value));
@@ -189,10 +191,15 @@ export function refinePersonMask(source: ImageData, softMask: ImageData, options
   const frontSure = new Uint8Array(size);
   const backgroundSure = new Uint8Array(size);
   const kernelArea = (2 * erodeRadius + 1) ** 2;
+  const edgeBandRadius = options.edgeBandRadius ?? Math.max(8, Math.min(28, Math.round(Math.max(width, height) * 0.018)));
+  const edgeKernelArea = (2 * edgeBandRadius + 1) ** 2;
   for (let i = 0; i < size; i++) {
     frontSure[i] = frontCounts[i] === kernelArea ? 1 : 0;
     backgroundSure[i] = possibleCounts[i] === 0 ? 1 : 0;
   }
+  const nearEdgeCounts = boxCount(possibleFront, width, height, edgeBandRadius);
+  const edgeBand = new Uint8Array(size);
+  for (let i = 0; i < size; i++) edgeBand[i] = possibleFront[i] && nearEdgeCounts[i] < edgeKernelArea ? 1 : 0;
   const hasFront = frontSure.some((v) => v === 1);
   const hasBackground = backgroundSure.some((v) => v === 1);
   const result = new ImageData(new Uint8ClampedArray(data), width, height);
@@ -202,7 +209,11 @@ export function refinePersonMask(source: ImageData, softMask: ImageData, options
     return result;
   }
 
-  const nearestFront = nearestSure(frontSure, width, height);
+  // A deeper foreground seed gives a cleaner F estimate when the model over-trusts a colored fringe.
+  const deepFrontCounts = boxCount(frontSure, width, height, erodeRadius);
+  const deepFront = new Uint8Array(size);
+  for (let i = 0; i < size; i++) deepFront[i] = deepFrontCounts[i] === kernelArea ? 1 : 0;
+  const nearestFront = nearestSure(deepFront.some((v) => v === 1) ? deepFront : frontSure, width, height);
   const nearestBackground = nearestSure(backgroundSure, width, height);
   const frontCache = new Map<number, LocalColor>();
   const backgroundCache = new Map<number, LocalColor>();
@@ -210,10 +221,11 @@ export function refinePersonMask(source: ImageData, softMask: ImageData, options
   const choke = options.choke ?? 0.035;
   const varianceLimit = options.backgroundVarianceLimit ?? 900;
   const despillTolerance = options.despillTolerance ?? 14;
+  const minVisibleAlpha = options.minVisibleAlpha ?? 0.06;
 
   for (let i = 0; i < size; i++) {
     const modelAlpha = clamp(probability[i]);
-    if (frontSure[i]) { alpha[i] = 1; continue; }
+    if (frontSure[i] && !edgeBand[i]) { alpha[i] = 1; continue; }
     if (backgroundSure[i]) { alpha[i] = 0; continue; }
     const fSeed = nearestFront[i];
     const bSeed = nearestBackground[i];
@@ -235,7 +247,10 @@ export function refinePersonMask(source: ImageData, softMask: ImageData, options
     const delta = foreground.color.map((channel, c) => channel - background!.color[c]);
     const denom = delta.reduce((sum, d) => sum + d * d, 0);
     const projected = denom < 64 ? modelAlpha : clamp(v.reduce((sum, channel, c) => sum + (channel - background!.color[c]) * delta[c], 0) / denom);
-    alpha[i] = clamp((noisyBackground ? modelAlpha : projected * 0.78 + modelAlpha * 0.22) - choke);
+    if (noisyBackground) alpha[i] = clamp(modelAlpha - choke);
+    else if (edgeBand[i] && modelAlpha > 0.6 && projected < 0.04) alpha[i] = 0;
+    else if (edgeBand[i]) alpha[i] = clamp(projected * 0.9 + modelAlpha * 0.1 - choke);
+    else alpha[i] = clamp(projected * 0.78 + modelAlpha * 0.22 - choke);
 
     const a = alpha[i];
     const recovered = a < 0.12
@@ -263,7 +278,8 @@ export function refinePersonMask(source: ImageData, softMask: ImageData, options
   }
   for (let i = 0; i < size; i++) {
     const at = i << 2;
-    if (feather[i] < 0.01 && nearestFront[i] >= 0) {
+    if (feather[i] < minVisibleAlpha) feather[i] = 0;
+    if (feather[i] === 0 && nearestFront[i] >= 0) {
       const seed = nearestFront[i];
       let foreground = frontCache.get(seed);
       if (!foreground) {
