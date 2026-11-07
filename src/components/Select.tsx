@@ -3,6 +3,7 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { IconChevronDown } from './icons';
+import { usePresence } from '@/lib/use-presence';
 
 export type SelectOption = { value: string; label: string; searchText?: string };
 type Props = {
@@ -33,6 +34,7 @@ export function Select({
   const [active, setActive] = useState(Math.max(0, options.findIndex((o) => o.value === value)));
   const [root, setRoot] = useState<HTMLElement | null>(null);
   const [position, setPosition] = useState<CSSProperties>({});
+  const presence = usePresence(open && !!root, 240);
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase('id');
     return q ? options.filter((o) => `${o.label} ${o.searchText ?? ''}`.toLocaleLowerCase('id').includes(q)) : options;
@@ -108,8 +110,8 @@ export function Select({
     }
   }
 
-  const panel = open && root ? createPortal(
-    <div id={`${uid}-panel`} className="select-panel" style={position} onKeyDown={onKeyDown}>
+  const panel = presence.present && root ? createPortal(
+    <div id={`${uid}-panel`} className="select-panel" data-state={presence.phase} style={position} onKeyDown={onKeyDown} inert={!open}>
       {searchable && <input ref={searchRef} className="select-search" type="search" aria-label={searchLabel} value={query}
         onChange={(e) => { setQuery(e.target.value); setActive(0); }} onKeyDown={onKeyDown} />}
       <div role="listbox" id={`${uid}-listbox`} aria-labelledby={id} className="select-options">
