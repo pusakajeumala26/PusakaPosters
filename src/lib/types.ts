@@ -25,6 +25,7 @@ export type MemberView = {
   phone?: string;
   folder?: string;
   cutoutUrl?: string | null;
+  cutoutPath?: string | null;
   originalUrl?: string | null;
 };
 
