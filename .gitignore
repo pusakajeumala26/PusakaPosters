@@ -23,6 +23,9 @@ logs/
 coverage/
 *.ps1
 
+# Local member test photos contain personal data and must never be committed.
+tests/fixtures-local/
+
 # Agents
 .agents/
 .claude/
