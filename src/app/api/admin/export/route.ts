@@ -2,6 +2,7 @@ import { requireAdmin } from '@/lib/auth';
 import { APP_TZ_OFFSET_MS } from '@/lib/constants';
 import { db } from '@/lib/db';
 import { route } from '@/lib/http';
+import { GENDER_LABELS } from '@/lib/types';
 
 export const runtime = 'nodejs';
 
@@ -34,7 +35,7 @@ export const GET = route(async () => {
   const lines = rows.map((m) =>
     [
       text(m.name),
-      m.gender === 'L' ? 'Laki-laki' : 'Perempuan',
+      GENDER_LABELS[m.gender],
       m.countryCode.replace('+', ''),
       `${m.countryCode.replace('+', '')}${m.phone}`,
       text(m.quote),
