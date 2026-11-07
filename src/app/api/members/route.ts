@@ -14,7 +14,7 @@ export const maxDuration = 30;
 
 /**
  * Anggota upload data baru.
- * multipart/form-data: name, countryCode, phone, quote, gender, password,
+ * multipart/form-data: name, countryCode, phone, gender, password,
  *   original (WebP), cutout (PNG alpha tanpa latar, opsional jika model gagal).
  * File disimpan di bucket: <folder-anggota>/original.webp dan <folder-anggota>/cutout.png
  */
@@ -56,7 +56,7 @@ export const POST = route(async (req: Request) => {
         name: fields.name,
         countryCode: fields.countryCode,
         phone: fields.phone,
-        quote: fields.quote,
+        quote: '',
         gender: fields.gender,
         passwordHash,
         originalPath,
