@@ -1,4 +1,5 @@
 export type Gender = 'L' | 'P';
+export const GENDER_LABELS: Record<Gender, string> = { L: 'Pria', P: 'Wanita' };
 export type PosterStatus = 'MASUK' | 'DESAIN' | 'SIAP' | 'POSTING';
 
 export const STATUS_META: { id: PosterStatus; label: string; chip: string }[] = [
