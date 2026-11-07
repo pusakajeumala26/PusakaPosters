@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { formatWhen } from '@/lib/format';
-import type { EditableMember, Gender, MemberView, Stats } from '@/lib/types';
+import { GENDER_LABELS, type EditableMember, type Gender, type MemberView, type Stats } from '@/lib/types';
 import { Avatar } from './Avatar';
 import { IconChevronRight, IconSearch, IconSort, IconUpload } from './icons';
 import { MemberSheet } from './MemberSheet';
@@ -132,7 +132,7 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
             Filter gender
           </label>
           <Select id="gf" value={gender} onChange={(v) => setGender(v as 'all' | Gender)}
-            options={[{ value: 'all', label: 'Semua' }, { value: 'L', label: 'Laki-laki' }, { value: 'P', label: 'Perempuan' }]} />
+            options={[{ value: 'all', label: 'Semua' }, { value: 'L', label: GENDER_LABELS.L }, { value: 'P', label: GENDER_LABELS.P }]} />
         </div>
         <button type="button" className="btn primary upload" onClick={() => setModal({ open: true, editing: null })}>
           <IconUpload />
