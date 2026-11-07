@@ -36,6 +36,7 @@ function toView(m: Member, admin: boolean, urls: Record<string, string>): Member
     view.phone = m.phone;
     view.folder = m.folder;
     view.cutoutUrl = m.cutoutPath ? (urls[m.cutoutPath] ?? null) : null;
+    view.cutoutPath = m.cutoutPath;
     view.originalUrl = m.originalPath ? (urls[m.originalPath] ?? null) : null;
   }
   return view;
