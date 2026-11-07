@@ -527,6 +527,18 @@ a {
 .btn.primary:hover {
   background: #2b2b2b;
 }
+.btn.mobile-chat {
+  background: #25d366;
+  border-color: #25d366;
+  color: #fff;
+}
+.btn.mobile-chat:hover {
+  background: #1fba59;
+  border-color: #1fba59;
+}
+.mobile-chat-cell {
+  display: none;
+}
 .btn.ghost {
   border-color: var(--line);
 }
@@ -1654,6 +1666,20 @@ textarea.inp {
 }
 
 @media (max-width: 639px) {
+  .phone-display,
+  .desktop-admin-chat {
+    display: none;
+  }
+  .mobile-chat-cell {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .mobile-chat-cell .btn {
+    height: 40px;
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
   .date-overlay { align-items: flex-end; padding: 0 max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); }
   .date-dialog { width: min(360px, 100vw); max-height: 90dvh; border-radius: 22px 22px 0 0; padding: 12px 8px max(12px, env(safe-area-inset-bottom)); }
 }
