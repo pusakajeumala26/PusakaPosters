@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { COUNTRY_CODES, QUOTE_MAX } from './constants';
+import { COUNTRY_CODES } from './constants';
 import { toTitleCase } from './format';
 
 /** Hanya digit, tanpa nol di depan. "0812-3456" -> "8123456" */
@@ -19,11 +19,6 @@ export const memberFields = z.object({
         .min(8, 'Nomor terlalu pendek. Contoh: 812 3456 7890.')
         .max(15, 'Nomor terlalu panjang.'),
     ),
-  quote: z
-    .string()
-    .trim()
-    .min(1, 'Tulis satu kalimat untuk posternya.')
-    .max(QUOTE_MAX, `Maksimal ${QUOTE_MAX} karakter.`),
   gender: z.enum(['L', 'P'], { error: 'Pilih gender.' }),
 });
 
