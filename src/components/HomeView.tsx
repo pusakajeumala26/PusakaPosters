@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { formatWhen } from '@/lib/format';
 import type { EditableMember, Gender, MemberView, Stats } from '@/lib/types';
 import { Avatar } from './Avatar';
@@ -10,6 +10,7 @@ import { MemberSheet } from './MemberSheet';
 import { useToast } from './ToastProvider';
 import { UploadModal, type EditingState } from './UploadModal';
 import { Select } from './Select';
+import { usePresence } from '@/lib/use-presence';
 
 type Props = {
   members: MemberView[];
@@ -29,7 +30,14 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
   const [sort, setSort] = useState<'new' | 'az'>('new');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(autoUpload ? { open: true, editing: null } : { open: false });
+  const [lastEditing, setLastEditing] = useState<EditingState | null>(null);
+  const modalPresence = usePresence(modal.open, 340);
   const [refreshing, startRefresh] = useTransition();
+
+  useEffect(() => {
+    if (modal.open && modal.editing) setLastEditing(modal.editing);
+    else if (!modal.open && !modalPresence.present) setLastEditing(null);
+  }, [modal, modalPresence.present]);
 
   const items = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -179,11 +187,13 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
         </div>
       )}
 
-      {detail && <MemberSheet member={detail} admin={admin} onClose={() => setDetailId(null)} onEdit={startEdit} />}
+      <MemberSheet member={detail} admin={admin} onClose={() => setDetailId(null)} onEdit={startEdit} />
 
-      {modal.open && (
+      {modalPresence.present && (
         <UploadModal
-          editing={modal.editing}
+          open={modal.open}
+          presence={modalPresence.phase}
+          editing={modal.open ? modal.editing : lastEditing}
           admin={admin}
           uploadOpen={uploadOpen}
           onClose={() => setModal({ open: false })}
