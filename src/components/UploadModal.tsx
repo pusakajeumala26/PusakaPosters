@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { COUNTRY_OPTIONS, QUOTE_MAX } from '@/lib/constants';
+import { COUNTRY_OPTIONS } from '@/lib/constants';
 import { toTitleCase } from '@/lib/format';
 import { processPhoto, STAGE_LABEL, type PhotoResult, type Stage } from '@/lib/photo';
 import { preloadSegmenter } from '@/lib/segment';
@@ -14,7 +14,7 @@ import { ContactAdmin } from './ContactAdmin';
 
 export type EditingState = { member: MemberView; data: EditableMember; password?: string };
 
-type Field = 'name' | 'phone' | 'quote' | 'gender' | 'pw' | 'photo';
+type Field = 'name' | 'phone' | 'gender' | 'pw' | 'photo';
 type Errors = Partial<Record<Field, string>>;
 
 type Props = {
@@ -44,7 +44,6 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
     name: editing?.data.name ?? '',
     cc: editing?.data.countryCode ?? '+62',
     phone: editing?.data.phone ?? '',
-    quote: editing?.data.quote ?? '',
     gender: (editing?.data.gender ?? '') as Gender | '',
     pw: '',
   });
@@ -116,7 +115,6 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
       name: f.name,
       countryCode: f.cc,
       phone: f.phone,
-      quote: f.quote,
       gender: f.gender,
     });
     if (!parsed.success) {
@@ -143,7 +141,7 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
     const errs = validate();
     if (Object.values(errs).some(Boolean)) {
       setErrors(errs);
-      const first = (['name', 'phone', 'quote', 'gender', 'pw', 'photo'] as Field[]).find((k) => errs[k]);
+      const first = (['name', 'phone', 'gender', 'pw', 'photo'] as Field[]).find((k) => errs[k]);
       if (first) ref.current?.querySelector<HTMLElement>(`[data-field="${first}"]`)?.focus();
       return;
     }
@@ -152,7 +150,6 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
     fd.set('name', f.name.trim());
     fd.set('countryCode', f.cc);
     fd.set('phone', f.phone);
-    fd.set('quote', f.quote.trim());
     fd.set('gender', f.gender);
     if (f.pw) fd.set('password', f.pw);
     if (editing && !admin && editing.password) fd.set('currentPassword', editing.password);
@@ -284,30 +281,6 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
                   />
                 </div>
                 <FieldError id="err-phone" message={errors.phone} />
-              </div>
-
-              <div className={fc('quote')}>
-                <label className="lbl" htmlFor="f-quote">
-                  Subjek <em>· quote untuk poster</em>
-                </label>
-                <textarea
-                  id="f-quote"
-                  data-field="quote"
-                  className="inp"
-                  maxLength={QUOTE_MAX}
-                  placeholder="Satu kalimat tentang kamu atau tentang Pusaka"
-                  value={f.quote}
-                  onChange={(e) => set('quote', e.target.value)}
-                  aria-invalid={inv('quote')}
-                  aria-describedby={desc('quote')}
-                />
-                <div className="hint">
-                  <span>Akan ditulis apa adanya di poster.</span>
-                  <span className="num">
-                    {f.quote.length}/{QUOTE_MAX}
-                  </span>
-                </div>
-                <FieldError id="err-quote" message={errors.quote} />
               </div>
 
               <div className={fc('gender')}>
