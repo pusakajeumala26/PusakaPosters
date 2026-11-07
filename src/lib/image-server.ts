@@ -36,3 +36,33 @@ export async function normalizeToWebp(value: FormDataEntryValue | null, label: s
     throw new HttpError(422, `${label} tidak bisa diproses.`);
   }
 }
+
+/** Normalize a cutout to lossless PNG while retaining its straight alpha channel. */
+export async function normalizeToPng(value: FormDataEntryValue | null, label: string): Promise<Buffer> {
+  if (!(value instanceof File) || value.size === 0) throw new HttpError(422, `${label} wajib diisi.`);
+  if (value.size > MAX_FILE_BYTES) throw new HttpError(413, `${label} terlalu besar (maks. 4 MB).`);
+
+  const input = Buffer.from(await value.arrayBuffer());
+  const opts = { failOn: 'error' as const, limitInputPixels: 25_000_000 };
+  let meta: Awaited<ReturnType<ReturnType<typeof sharp>['metadata']>>;
+  try {
+    meta = await sharp(input, opts).metadata();
+  } catch {
+    throw new HttpError(422, `${label} bukan gambar yang valid.`);
+  }
+  if (!meta.width || !meta.height || !['jpeg', 'png', 'webp'].includes(meta.format ?? '')) {
+    throw new HttpError(422, `${label} bukan gambar yang valid.`);
+  }
+  if ((meta.pages ?? 1) > 1) throw new HttpError(422, `${label} tidak boleh animasi.`);
+  if (meta.format === 'png' && Math.max(meta.width, meta.height) <= MAX_IMAGE_SIDE + 400) return input;
+
+  try {
+    return await sharp(input, opts)
+      .rotate()
+      .resize({ width: MAX_IMAGE_SIDE, height: MAX_IMAGE_SIDE, fit: 'inside', withoutEnlargement: true })
+      .png({ compressionLevel: 9, adaptiveFiltering: true })
+      .toBuffer();
+  } catch {
+    throw new HttpError(422, `${label} tidak bisa diproses.`);
+  }
+}
