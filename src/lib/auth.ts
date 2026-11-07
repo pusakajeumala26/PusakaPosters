@@ -26,6 +26,15 @@ export async function verifyAdminPassword(password: string): Promise<boolean> {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** Super admin secret is stored as a deployment secret and compared in constant time. */
+export function verifySuperAdminPassword(password: string): boolean {
+  const expected = process.env.SUPER_ADMIN_PASSWORD;
+  if (!expected) return false;
+  const actualBytes = Buffer.from(password);
+  const expectedBytes = Buffer.from(expected);
+  return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes);
+}
+
 export async function createAdminSession() {
   const { adminPwVersion } = await loadSettings();
   const token = await new SignJWT({ role: 'admin', pv: adminPwVersion })
