@@ -3,6 +3,7 @@
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useDialog } from '@/lib/use-dialog';
+import { usePresence } from '@/lib/use-presence';
 
 const WEEKDAYS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 const dateString = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -21,7 +22,8 @@ export function DatePicker({ id, value, onChange }: { id: string; value: string;
   });
   const [draft, setDraft] = useState(value);
   const [cursor, setCursor] = useState(() => dateFromString(value));
-  const dialogRef = useDialog<HTMLElement>(() => setOpen(false), open);
+  const presence = usePresence(open && !!portalRoot, 240);
+  const dialogRef = useDialog<HTMLElement>(() => setOpen(false), open && presence.present);
   const todayValue = dateString(new Date());
 
   const days = useMemo(() => {
@@ -102,8 +104,8 @@ export function DatePicker({ id, value, onChange }: { id: string; value: string;
     }
   }
 
-  const dialog = open && portalRoot ? createPortal(
-    <div className="date-overlay">
+  const dialog = presence.present && portalRoot ? createPortal(
+    <div className="date-overlay" data-state={presence.phase} aria-hidden={!open} inert={!open}>
       <button type="button" className="scrim" aria-label="Tutup kalender" tabIndex={-1} onClick={() => setOpen(false)} />
       <section ref={dialogRef} className="date-dialog" role="dialog" aria-modal="true" aria-label="Pilih tanggal" tabIndex={-1}>
         <header className="date-head">
