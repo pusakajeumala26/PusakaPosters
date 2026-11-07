@@ -38,6 +38,7 @@ export function Select({
     return q ? options.filter((o) => `${o.label} ${o.searchText ?? ''}`.toLocaleLowerCase('id').includes(q)) : options;
   }, [options, query]);
   const activeOption = filtered[Math.min(active, Math.max(0, filtered.length - 1))];
+  const selectedOptionValue = options.find((option) => option.value === value)?.value;
 
   useEffect(() => {
     if (!open) return;
@@ -59,13 +60,13 @@ export function Select({
     const closeOnViewport = () => setOpen(false);
     window.addEventListener('resize', closeOnViewport);
     window.addEventListener('scroll', closeOnViewport, true);
-    const focusTimer = window.setTimeout(() => (searchable ? searchRef.current : document.getElementById(`${uid}-option-${activeOption?.value}`))?.focus(), 0);
+    const focusTimer = window.setTimeout(() => (searchable ? searchRef.current : document.getElementById(`${uid}-option-${selectedOptionValue}`))?.focus(), 0);
     return () => {
       clearTimeout(focusTimer);
       window.removeEventListener('resize', closeOnViewport);
       window.removeEventListener('scroll', closeOnViewport, true);
     };
-  }, [open, options, value, searchable, uid]);
+  }, [open, options, value, searchable, uid, selectedOptionValue]);
 
   useEffect(() => {
     if (!open) return;
