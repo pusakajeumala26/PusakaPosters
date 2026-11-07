@@ -2,11 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { hashPassword } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assertSameOrigin, clientIp, formString, HttpError, json, rateLimit, route } from '@/lib/http';
-import { normalizeToWebp } from '@/lib/image-server';
+import { normalizeToPng, normalizeToWebp } from '@/lib/image-server';
 import { isUniqueViolation, optionalFile, parseMemberFields } from '@/lib/member-input';
 import { loadSettings } from '@/lib/settings';
 import { slugify } from '@/lib/slug';
-import { removePaths, uploadWebp } from '@/lib/supabase';
+import { removePaths, uploadPng, uploadWebp } from '@/lib/supabase';
 import { newMemberPassword } from '@/lib/validation';
 
 export const runtime = 'nodejs';
@@ -15,8 +15,8 @@ export const maxDuration = 30;
 /**
  * Anggota upload data baru.
  * multipart/form-data: name, countryCode, phone, quote, gender, password,
- *   original (WebP), cutout (WebP tanpa latar, opsional jika model gagal).
- * File disimpan di bucket: <folder-anggota>/original.webp dan <folder-anggota>/cutout.webp
+ *   original (WebP), cutout (PNG alpha tanpa latar, opsional jika model gagal).
+ * File disimpan di bucket: <folder-anggota>/original.webp dan <folder-anggota>/cutout.png
  */
 export const POST = route(async (req: Request) => {
   assertSameOrigin(req);
@@ -32,7 +32,7 @@ export const POST = route(async (req: Request) => {
 
   const original = await normalizeToWebp(form.get('original'), 'Foto');
   const cutoutFile = optionalFile(form.get('cutout'));
-  const cutout = cutoutFile ? await normalizeToWebp(cutoutFile, 'Foto tanpa latar') : null;
+  const cutout = cutoutFile ? await normalizeToPng(cutoutFile, 'Foto tanpa latar') : null;
 
   const exists = await db.member.findUnique({
     where: { countryCode_phone: { countryCode: fields.countryCode, phone: fields.phone } },
@@ -43,12 +43,12 @@ export const POST = route(async (req: Request) => {
   const id = randomUUID();
   const folder = `${slugify(fields.name)}-${id.slice(0, 8)}`;
   const originalPath = `${folder}/original.webp`;
-  const cutoutPath = cutout ? `${folder}/cutout.webp` : null;
+  const cutoutPath = cutout ? `${folder}/cutout.png` : null;
   const passwordHash = await hashPassword(password.data);
 
   try {
     await uploadWebp(originalPath, original);
-    if (cutout && cutoutPath) await uploadWebp(cutoutPath, cutout);
+    if (cutout && cutoutPath) await uploadPng(cutoutPath, cutout);
     await db.member.create({
       data: {
         id,
