@@ -53,6 +53,5 @@ export type EditableMember = {
   name: string;
   countryCode: string;
   phone: string;
-  quote: string;
   gender: Gender;
 };
