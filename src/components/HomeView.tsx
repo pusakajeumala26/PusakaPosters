@@ -146,7 +146,7 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
               <Avatar name={m.name} src={m.photoUrl} />
               <span className="mtxt">
                 <b>{m.name}</b>
-                <span>{m.quote}</span>
+                {m.quote && <span>{m.quote}</span>}
                 <span suppressHydrationWarning>{formatWhen(m.createdAt)}</span>
               </span>
               <IconChevronRight size={22} />
