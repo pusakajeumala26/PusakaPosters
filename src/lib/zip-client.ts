@@ -4,7 +4,7 @@ type Job = { path: string; url: string };
 
 /**
  * Kumpulkan foto anggota (admin) jadi satu ZIP di browser.
- * Struktur: <folder-anggota>/original.webp dan <folder-anggota>/cutout.webp
+ * Struktur: <folder-anggota>/original.webp dan cutout sesuai format/path yang disimpan.
  * File diambil langsung dari Supabase lewat signed URL, jadi tidak membebani server.
  */
 export async function downloadPhotosZip(
@@ -15,7 +15,10 @@ export async function downloadPhotosZip(
   for (const m of members) {
     if (!m.folder) continue;
     if (m.originalUrl) jobs.push({ path: `${m.folder}/original.webp`, url: m.originalUrl });
-    if (m.cutoutUrl) jobs.push({ path: `${m.folder}/cutout.webp`, url: m.cutoutUrl });
+    if (m.cutoutUrl) jobs.push({
+      path: `${m.folder}/cutout.${m.cutoutPath?.toLowerCase().endsWith('.png') ? 'png' : 'webp'}`,
+      url: m.cutoutUrl,
+    });
   }
   if (!jobs.length) throw new Error('Tidak ada foto untuk diunduh.');
 
