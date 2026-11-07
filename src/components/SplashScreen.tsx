@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 export function SplashScreen({ onDismiss }: { onDismiss: () => void }) {
   const [exiting, setExiting] = useState(false);
@@ -14,6 +15,6 @@ export function SplashScreen({ onDismiss }: { onDismiss: () => void }) {
     return () => { clearTimeout(start); clearTimeout(finish); };
   }, [onDismiss]);
   return <div className={exiting ? 'splash-screen exiting' : 'splash-screen'} style={{ transitionDuration: `${exitMs}ms` }} role="status" aria-label="Memuat PusakaPosters">
-    <img src="/images/logo.svg" width="150" height="149" alt="" fetchPriority="high" />
+    <Image src="/images/logo.svg" width={150} height={149} alt="" priority />
   </div>;
 }
