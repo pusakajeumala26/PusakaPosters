@@ -158,7 +158,7 @@ export function UploadModal({ editing, admin, uploadOpen, onClose, onDone }: Pro
     if (editing && !admin && editing.password) fd.set('currentPassword', editing.password);
     if (photo) {
       fd.set('original', photo.original, 'original.webp');
-      if (photo.cutout) fd.set('cutout', photo.cutout, 'cutout.webp');
+      if (photo.cutout) fd.set('cutout', photo.cutout, 'cutout.png');
     }
 
     setSending(true);
