@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { formatWhen, whatsappLink } from '@/lib/format';
-import { STATUS_META, type EditableMember, type MemberView } from '@/lib/types';
+import { GENDER_LABELS, STATUS_META, type EditableMember, type MemberView } from '@/lib/types';
 import { useDialog } from '@/lib/use-dialog';
 import { usePresence } from '@/lib/use-presence';
 import { Avatar } from './Avatar';
@@ -114,7 +114,7 @@ export function MemberSheet({ member: incomingMember, admin, onClose, onEdit }: 
 
           <dl className="dl">
             <dt>Gender</dt>
-            <dd>{activeMember.gender === 'L' ? 'Laki-laki' : 'Perempuan'}</dd>
+            <dd>{GENDER_LABELS[activeMember.gender]}</dd>
             <dt>No. HP/WA</dt>
             <dd className="num phone-display">{activeMember.phoneDisplay}</dd>
             <dd className="mobile-chat-cell">
