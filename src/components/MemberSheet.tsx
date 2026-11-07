@@ -104,7 +104,13 @@ export function MemberSheet({ member, admin, onClose, onEdit }: Props) {
             <dt>Gender</dt>
             <dd>{member.gender === 'L' ? 'Laki-laki' : 'Perempuan'}</dd>
             <dt>No. HP/WA</dt>
-            <dd className="num">{member.phoneDisplay}</dd>
+            <dd className="num phone-display">{member.phoneDisplay}</dd>
+            <dd className="mobile-chat-cell">
+              <a className="btn mobile-chat" href={`/api/members/${member.id}/whatsapp`} target="_blank" rel="noopener noreferrer">
+                <IconChat size={18} />
+                Chat WhatsApp
+              </a>
+            </dd>
             <dt>Status poster</dt>
             <dd>
               <span className={status.chip}>{status.label}</span>
@@ -116,7 +122,7 @@ export function MemberSheet({ member, admin, onClose, onEdit }: Props) {
           {admin ? (
             <div className="acts">
               {member.phone && (
-                <a className="btn" href={whatsappLink(member.countryCode, member.phone)} target="_blank" rel="noopener noreferrer">
+                <a className="btn desktop-admin-chat" href={whatsappLink(member.countryCode, member.phone)} target="_blank" rel="noopener noreferrer">
                   <IconChat size={18} />
                   Chat WhatsApp
                 </a>
