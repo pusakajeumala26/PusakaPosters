@@ -73,7 +73,6 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
         name: fields.name,
         countryCode: fields.countryCode,
         phone: fields.phone,
-        quote: fields.quote,
         gender: fields.gender,
         originalPath: nextOriginalPath,
         cutoutPath: nextCutoutPath,
