@@ -93,6 +93,7 @@ a {
 .sr:focus-visible { position: fixed; z-index: 250; clip: auto; width: auto; height: auto; left: 12px; bottom: 12px; padding: 8px; background: var(--paper); }
 .date-trigger { min-height: 44px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px; border: 1px solid var(--field); border-radius: 12px; background: var(--paper); text-align: left; cursor: pointer; }
 .date-overlay { position: fixed; inset: 0; z-index: 170; display: flex; align-items: center; justify-content: center; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+.date-overlay .scrim { z-index: 0; }
 .date-dialog { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 12px; width: min(360px, calc(100vw - 32px)); max-height: 90dvh; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 12px; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); box-shadow: 0 22px 64px rgba(0,0,0,.22); }
 .date-overlay[data-state] { opacity: 0; transition: opacity .2s ease; }
 .date-overlay[data-state="open"] { opacity: 1; }
