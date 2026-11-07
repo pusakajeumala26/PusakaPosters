@@ -25,7 +25,6 @@ export const POST = route(async (req: Request, ctx: Ctx) => {
     name: member.name,
     countryCode: member.countryCode,
     phone: member.phone,
-    quote: member.quote,
     gender: member.gender,
   };
   return json({ ok: true, member: editable });
