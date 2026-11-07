@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { usePathname, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useEffect, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
 import { useDialog } from '@/lib/use-dialog';
 import { usePwaInstall } from '@/lib/pwa';
@@ -115,7 +116,7 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
         inert={!desktop && !open}
       >
         <div className="brand">
-          <img className="mono" src="/brand/logo-mark-light.webp" alt="" width={44} height={44} />
+          <Image className="mono" src="/brand/logo-mark-light.webp" alt="" width={44} height={44} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <b>PusakaPosters</b>
             <span>Leting {letingName}</span>
@@ -176,7 +177,7 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
 
       <div className="main">
         <header className="top">
-          <img className="mono top-mono" src="/brand/logo-mark-light.webp" alt="" width={44} height={44} />
+          <Image className="mono top-mono" src="/brand/logo-mark-light.webp" alt="" width={44} height={44} />
           <div className="top-t">
             <h1>{meta.title}</h1>
             {sub && <p>{sub}</p>}
