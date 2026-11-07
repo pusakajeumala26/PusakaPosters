@@ -1,9 +1,9 @@
 import { checkAdmin, comparePassword, hashPassword } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assertSameOrigin, clientIp, formString, HttpError, json, rateLimit, route } from '@/lib/http';
-import { normalizeToWebp } from '@/lib/image-server';
+import { normalizeToPng, normalizeToWebp } from '@/lib/image-server';
 import { isUniqueViolation, optionalFile, parseMemberFields } from '@/lib/member-input';
-import { removePaths, uploadWebp } from '@/lib/supabase';
+import { removePaths, uploadPng, uploadWebp } from '@/lib/supabase';
 import { editMemberPassword } from '@/lib/validation';
 
 export const runtime = 'nodejs';
@@ -45,20 +45,22 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
   const originalFile = optionalFile(form.get('original'));
   const cutoutFile = optionalFile(form.get('cutout'));
   const original = originalFile ? await normalizeToWebp(originalFile, 'Foto') : null;
-  const cutout = cutoutFile ? await normalizeToWebp(cutoutFile, 'Foto tanpa latar') : null;
+  const cutout = cutoutFile ? await normalizeToPng(cutoutFile, 'Foto tanpa latar') : null;
 
   const originalPath = `${member.folder}/original.webp`;
-  const cutoutPath = `${member.folder}/cutout.webp`;
+  const cutoutPath = `${member.folder}/cutout.png`;
   let nextOriginalPath = member.originalPath;
   let nextCutoutPath = member.cutoutPath;
+  let oldCutoutPath: string | null = null;
 
   if (original) {
     await uploadWebp(originalPath, original);
     nextOriginalPath = originalPath;
   }
   if (cutout) {
-    await uploadWebp(cutoutPath, cutout);
+    await uploadPng(cutoutPath, cutout);
     nextCutoutPath = cutoutPath;
+    if (member.cutoutPath && member.cutoutPath !== cutoutPath) oldCutoutPath = member.cutoutPath;
   } else if (original && member.cutoutPath) {
     await removePaths([member.cutoutPath]).catch(() => {});
     nextCutoutPath = null;
@@ -82,6 +84,8 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
     if (isUniqueViolation(e)) throw new HttpError(409, 'Nomor ini sudah dipakai anggota lain.');
     throw e;
   }
+
+  if (oldCutoutPath) await removePaths([oldCutoutPath]).catch(() => {});
 
   return json({ ok: true });
 });
