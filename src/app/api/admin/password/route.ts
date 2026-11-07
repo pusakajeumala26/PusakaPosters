@@ -1,6 +1,6 @@
-import { createAdminSession, hashPassword, requireAdmin } from '@/lib/auth';
+import { createAdminSession, hashPassword, requireAdmin, verifySuperAdminPassword } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { assertSameOrigin, json, readJson, route } from '@/lib/http';
+import { assertSameOrigin, clientIp, HttpError, json, rateLimit, readJson, route } from '@/lib/http';
 import { adminPassword } from '@/lib/validation';
 
 export const runtime = 'nodejs';
@@ -9,7 +9,13 @@ export const runtime = 'nodejs';
 export const POST = route(async (req: Request) => {
   assertSameOrigin(req);
   await requireAdmin();
-  const body = await readJson<{ newPassword?: unknown }>(req);
+  rateLimit(`super-admin-change:${clientIp(req)}`, 5, 15 * 60_000);
+  if (!process.env.SUPER_ADMIN_PASSWORD) {
+    throw new HttpError(503, 'Akses super admin belum dikonfigurasi di server.');
+  }
+  const body = await readJson<{ newPassword?: unknown; superAdminPassword?: unknown }>(req);
+  const superAdminPassword = typeof body.superAdminPassword === 'string' ? body.superAdminPassword : '';
+  if (!verifySuperAdminPassword(superAdminPassword)) throw new HttpError(403, 'Password super admin salah.');
   const newPassword = adminPassword.parse(typeof body.newPassword === 'string' ? body.newPassword : '');
 
   await db.setting.upsert({
