@@ -49,6 +49,24 @@ npm run dev
 
 5. **Commit `package-lock.json`** setelah `npm install` pertama supaya versi terkunci.
 
+## Variabel lingkungan
+
+| Variabel | Wajib | Keterangan |
+| --- | --- | --- |
+| `DATABASE_URL` | Ya | URL NeonDB pooled untuk runtime. |
+| `DIRECT_URL` | Ya | URL NeonDB langsung untuk Prisma migrate. |
+| `SUPABASE_URL` | Ya | URL project Supabase Storage. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Ya | Kunci rahasia server untuk bucket privat. |
+| `SUPABASE_BUCKET` | Ya | Nama bucket foto anggota, biasanya `member-photos`. |
+| `ADMIN_PASSWORD` | Setup awal | Password admin awal sebelum diganti dari Pengaturan. |
+| `SESSION_SECRET` | Ya | Kunci penanda tangan cookie admin. |
+| `PORTFOLIO_MCP_URL` | Opsional | Endpoint MCP portfolio untuk form `/masukan`. |
+| `PORTFOLIO_MCP_API_KEY` | Opsional | API key MCP portfolio; hanya server, jangan diberi awalan `NEXT_PUBLIC_`. |
+| `NEXT_PUBLIC_SEGMENTER_RUNTIME` | Opsional | Pilih runtime segmentasi `mediapipe` (default) atau `tfjs`. |
+| `NEXT_PUBLIC_SEGMENTER_MODEL_URL` | Opsional | URL model khusus runtime TF.js. |
+
+Atur dua variabel portfolio pada deployment agar form masukan dapat mengirim testimoni. Detail alur dan pengelolaan key ada di [docs/feedback.md](docs/feedback.md).
+
 ## Deploy (Vercel)
 
 - Import repo, isi semua env dari `.env.example`, deploy. `npm run build` sudah menjalankan `prisma generate`.
