@@ -54,3 +54,51 @@ model Setting {
   /// Dinaikkan setiap password admin diganti, supaya sesi lama tidak berlaku
   adminPwVersion    Int       @default(0)
 }
+
+enum FeedbackSync {
+  QUEUED
+  SENT
+  FAILED
+}
+
+/// Masukan publik. Selalu disimpan di sini lebih dulu, lalu dikirim ke portfolio lewat antrean.
+model Feedback {
+  id            String       @id @default(uuid())
+  name          String
+  role          String?
+  message       String
+  rating        Int
+  /// Path foto profil (prefix "feedback/") di Supabase Storage; tidak dikirim ke portfolio
+  avatarKey     String?
+  syncStatus    FeedbackSync @default(QUEUED)
+  attempts      Int          @default(0)
+  /// Jenis kegagalan terakhir: dns, network, timeout, unauthorized, rate_limited, server, invalid
+  lastError     String?
+  lastAttemptAt DateTime?
+  nextAttemptAt DateTime?
+  /// Ada percobaan yang hasilnya tidak pasti (timeout/5xx): kemungkinan sudah diterima portfolio
+  uncertain     Boolean      @default(false)
+  remoteId      String?
+  sentAt        DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([syncStatus, nextAttemptAt])
+  @@index([createdAt])
+}
+
+/// Baris tunggal (id = 1): koneksi MCP portfolio yang diatur dari halaman Pengaturan admin
+model PortfolioConnection {
+  id           Int       @id @default(1)
+  url          String?
+  /// API key terenkripsi AES-256-GCM; tidak pernah dikirim ke browser
+  keyEnc       String?
+  /// Empat karakter terakhir key untuk tampilan tersamar
+  keyHint      String?
+  connected    Boolean   @default(false)
+  lastTestAt   DateTime?
+  lastTestOk   Boolean?
+  lastTestKind String?
+  lastTestMs   Int?
+  lastTestNote String?
+  updatedAt    DateTime  @updatedAt
+}
