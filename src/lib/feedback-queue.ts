@@ -1,3 +1,4 @@
+import { clampRoleForMcp } from './feedback-input';
 import {
   planAfterFailure,
   type DeliveryResult,
@@ -47,7 +48,7 @@ export const toMcpInput = (row: QueueRow, project: string): FeedbackInput => ({
   name: row.name,
   message: row.message,
   rating: row.rating,
-  ...(row.role ? { role: row.role } : {}),
+  ...(row.role ? { role: clampRoleForMcp(row.role) } : {}),
   project,
 });
 

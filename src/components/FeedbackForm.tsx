@@ -1,20 +1,21 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { AVATAR_MAX_BYTES, AVATAR_TYPES, FEEDBACK_ROLES, MESSAGE_MAX, MESSAGE_MIN, NAME_MAX } from '@/lib/feedback-input';
+import { AVATAR_MAX_BYTES, AVATAR_TYPES, MESSAGE_MAX, MESSAGE_MIN, NAME_MAX, ROLE_DEFS, ROLE_DETAIL_MAX } from '@/lib/feedback-input';
 import { useDialog } from '@/lib/use-dialog';
 import { usePresence } from '@/lib/use-presence';
 import { Avatar } from './Avatar';
 import { IconAlert, IconChat, IconClose, IconImage } from './icons';
 import { Select } from './Select';
 
-const ROLE_OPTIONS = [{ value: '', label: 'Pilih peran' }, ...FEEDBACK_ROLES.map((role) => ({ value: role, label: role }))];
+const ROLE_OPTIONS = [{ value: '', label: 'Pilih peran' }, ...ROLE_DEFS.map((def) => ({ value: def.value, label: def.value }))];
 const UNAVAILABLE = 'Masukan belum dapat dikirim saat ini. Coba lagi beberapa saat lagi.';
-type Errors = Partial<Record<'name' | 'message' | 'rating' | 'consent' | 'avatar', string>>;
+type Errors = Partial<Record<'name' | 'roleDetail' | 'message' | 'rating' | 'consent' | 'avatar', string>>;
 
 function useFeedbackForm() {
   const [name, setName] = useState('');
-  const [role, setRole] = useState('');
+  const [role, setRoleState] = useState('');
+  const [roleDetail, setRoleDetail] = useState('');
   const [rating, setRating] = useState(0);
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
@@ -41,10 +42,17 @@ function useFeedbackForm() {
     setAvatar(file);
   }
 
+  function setRole(value: string) {
+    setRoleState(value);
+    setRoleDetail('');
+    setErrors((e) => ({ ...e, roleDetail: undefined }));
+  }
+
   async function submit() {
     if (busy) return;
     const found: Errors = {};
     if (!name.trim()) found.name = 'Nama lengkap wajib diisi.';
+    if (role && !roleDetail.trim()) found.roleDetail = 'Isi detail peran.';
     if (message.trim().length < MESSAGE_MIN) found.message = `Penilaian minimal ${MESSAGE_MIN} karakter.`;
     if (!rating) found.rating = 'Pilih penilaian bintang 1 sampai 5.';
     if (!consent) found.consent = 'Centang persetujuan agar masukan dapat dikirim.';
@@ -57,6 +65,7 @@ function useFeedbackForm() {
       const body = new FormData();
       body.set('name', name);
       body.set('role', role);
+      body.set('roleDetail', roleDetail);
       body.set('message', message);
       body.set('rating', String(rating));
       body.set('consent', 'true');
@@ -73,7 +82,7 @@ function useFeedbackForm() {
     }
   }
 
-  return { name, setName, role, setRole, rating, setRating, message, setMessage, consent, setConsent, website, setWebsite, avatar, setAvatar, preview, pickAvatar, errors, busy, error, sent, submit };
+  return { name, setName, role, setRole, roleDetail, setRoleDetail, rating, setRating, message, setMessage, consent, setConsent, website, setWebsite, avatar, setAvatar, preview, pickAvatar, errors, busy, error, sent, submit };
 }
 type Form = ReturnType<typeof useFeedbackForm>;
 
@@ -84,6 +93,7 @@ function FeedbackFields({ form, first }: { form: Form; first?: boolean }) {
   const uid = useId().replace(/:/g, '');
   const file = useRef<HTMLInputElement>(null);
   const { errors } = form;
+  const roleDef = ROLE_DEFS.find((def) => def.value === form.role);
 
   function chooseRating(value: number, focus = false) {
     form.setRating(value);
@@ -113,6 +123,16 @@ function FeedbackFields({ form, first }: { form: Form; first?: boolean }) {
         <label className="lbl" htmlFor={`${uid}-role`}>Peran <em>(opsional)</em></label>
         <Select id={`${uid}-role`} value={form.role} options={ROLE_OPTIONS} onChange={form.setRole} />
       </div>
+
+      {roleDef && (
+        <div className={`field${errors.roleDetail ? ' has-err' : ''}`}>
+          <label className="lbl" htmlFor={`${uid}-rd`}>{roleDef.detailLabel}</label>
+          <input className="inp" id={`${uid}-rd`} name="roleDetail" maxLength={ROLE_DETAIL_MAX} placeholder={`Contoh: ${roleDef.example}`}
+            aria-required="true" aria-invalid={!!errors.roleDetail} aria-describedby={errors.roleDetail ? `${uid}-rd-e` : undefined}
+            value={form.roleDetail} onChange={(e) => form.setRoleDetail(e.target.value)} />
+          <Err id={`${uid}-rd-e`} msg={errors.roleDetail} />
+        </div>
+      )}
 
       <div className="field">
         <span className="lbl" id={`${uid}-photo-l`}>Foto profil <em>(opsional)</em></span>

@@ -6,9 +6,6 @@ import type { MemberView, SettingsView as SettingsData } from '@/lib/types';
 import { downloadPhotosZip } from '@/lib/zip-client';
 import { DatePicker } from './DatePicker';
 import { useToast } from './ToastProvider';
-import { IconLock } from './icons';
-import { PortfolioConnectionCard } from './PortfolioConnectionCard';
-import type { PortfolioStatus } from '@/lib/feedback-types';
 
 async function patch(url: string, body: unknown, method = 'PATCH') {
   const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -16,19 +13,13 @@ async function patch(url: string, body: unknown, method = 'PATCH') {
   if (!res.ok) throw new Error(data.error ?? 'Perubahan gagal disimpan.');
 }
 
-export function SettingsView({ settings, members, portfolio }: { settings: SettingsData; members: MemberView[]; portfolio: PortfolioStatus }) {
+export function SettingsView({ settings, members }: { settings: SettingsData; members: MemberView[] }) {
   const router = useRouter();
   const toast = useToast();
 
   const [leting, setLeting] = useState(settings.letingName);
   const [target, setTarget] = useState(String(settings.target));
   const [deadline, setDeadline] = useState(settings.deadline);
-  const [newPw, setNewPw] = useState('');
-  const [unlockPassword, setUnlockPassword] = useState('');
-  const [superAdminPassword, setSuperAdminPassword] = useState('');
-  const [securityUnlocked, setSecurityUnlocked] = useState(false);
-  const [unlockPrompt, setUnlockPrompt] = useState(false);
-  const [unlockError, setUnlockError] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [refreshing, startRefresh] = useTransition();
 
@@ -69,44 +60,6 @@ export function SettingsView({ settings, members, portfolio }: { settings: Setti
       await patch('/api/admin/settings', { uploadOpen: !settings.uploadOpen });
       return settings.uploadOpen ? 'Upload ditutup' : 'Upload dibuka';
     });
-
-  const savePassword = (e: FormEvent) => {
-    e.preventDefault();
-    void run('pw', async () => {
-      await patch('/api/admin/password', { newPassword: newPw, superAdminPassword }, 'POST');
-      setNewPw('');
-      setSuperAdminPassword('');
-      setSecurityUnlocked(false);
-      return 'Password admin diganti';
-    });
-  };
-
-  async function unlockSecurity(e: FormEvent) {
-    e.preventDefault();
-    if (busy || !unlockPassword) return;
-    setBusy('unlock');
-    setUnlockError('');
-    try {
-      await patch('/api/admin/super-admin/verify', { password: unlockPassword }, 'POST');
-      setSuperAdminPassword(unlockPassword);
-      setUnlockPassword('');
-      setSecurityUnlocked(true);
-      setUnlockPrompt(false);
-      toast('Akses super admin dibuka');
-    } catch (e) {
-      setUnlockError(e instanceof Error ? e.message : 'Verifikasi super admin gagal.');
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  function lockSecurity() {
-    setSecurityUnlocked(false);
-    setSuperAdminPassword('');
-    setNewPw('');
-    setUnlockPrompt(false);
-    setUnlockError('');
-  }
 
   const exportZip = () =>
     run('zip', async () => {
@@ -188,54 +141,6 @@ export function SettingsView({ settings, members, portfolio }: { settings: Setti
           </div>
         </div>
       </section>
-
-      <PortfolioConnectionCard initial={portfolio} />
-
-      <section className="card security-card">
-        <h3>Keamanan</h3>
-        <p>Password ini membuka Galeri, Status Poster, dan Pengaturan. Mengganti password mengeluarkan admin di perangkat lain.</p>
-        {!securityUnlocked ? (
-          <div className="security-lock-card">
-            <div className="security-lock-message">
-              <IconLock size={24} />
-              <strong>Hanya super admin yang dapat mengganti password</strong>
-            </div>
-            {!unlockPrompt ? (
-              <button type="button" className="btn security-unlock-trigger" onClick={() => { setUnlockPrompt(true); setUnlockError(''); }}>
-                Verifikasi super admin
-              </button>
-            ) : (
-              <form className="security-unlock-form" onSubmit={unlockSecurity}>
-                <label className="lbl" htmlFor="s-super-admin-pw">Password super admin</label>
-                <input id="s-super-admin-pw" className="inp" type="password" autoComplete="current-password"
-                  value={unlockPassword} onChange={(e) => { setUnlockPassword(e.target.value); setUnlockError(''); }} />
-                {unlockError && <p className="security-error" role="alert">{unlockError}</p>}
-                <div className="security-unlock-actions">
-                  <button type="button" className="btn ghost" onClick={() => { setUnlockPrompt(false); setUnlockPassword(''); setUnlockError(''); }}>Batal</button>
-                  <button type="submit" className="btn security-unlock-trigger" disabled={busy === 'unlock' || !unlockPassword}>
-                    {busy === 'unlock' ? 'Memeriksa…' : 'Buka kunci'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        ) : (
-          <div className="security-unlocked">
-            <form onSubmit={savePassword}>
-              <div className="field">
-                <label className="lbl" htmlFor="s-npw">Password admin baru</label>
-                <input id="s-npw" className="inp" type="password" autoComplete="new-password"
-                  placeholder="Minimal 8 karakter" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
-              </div>
-              <button type="submit" className="btn primary" disabled={!!busy || newPw.length === 0}>
-                {busy === 'pw' ? 'Menyimpan…' : 'Ganti password'}
-              </button>
-            </form>
-            <button type="button" className="btn ghost" onClick={lockSecurity} disabled={!!busy}>Kunci kembali</button>
-          </div>
-        )}
-      </section>
-
     </div>
   );
 }

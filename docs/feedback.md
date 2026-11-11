@@ -8,9 +8,9 @@
 
 Alamat tool: `submit_feedback` (nama, isi, rating, peran, project `PusakaPosters`). Persetujuan, honeypot, dan foto tidak diteruskan.
 
-## Pengaturan koneksi (admin)
+## Pengaturan koneksi (super admin)
 
-Pengaturan > **Koneksi portfolio (MCP)**: URL MCP, API key, sakelar Tersambung/Terputus, tombol **Tes koneksi**, dan status terakhir (waktu, hasil, durasi, keterangan). Tidak ada environment variable untuk MCP.
+Super Admin > **MCP Server** (Koneksi portfolio): URL MCP, API key, sakelar Tersambung/Terputus, tombol **Tes koneksi**, dan status terakhir (waktu, hasil, durasi, keterangan). Tidak ada environment variable untuk MCP.
 
 - URL harus `https`, tanpa kredensial, berupa nama domain (bukan IP/localhost) agar form admin tidak bisa dipakai memanggil alamat internal. Redirect tidak diikuti.
 - API key dienkripsi AES-256-GCM dengan kunci turunan (HKDF-SHA256) dari `SESSION_SECRET`, disimpan di tabel `PortfolioConnection`, hanya ditampilkan tersamar (empat karakter terakhir), tidak pernah dikirim balik ke browser dan tidak dicatat di log. Jika `SESSION_SECRET` diganti, key tersimpan tidak terbaca dan harus diisi ulang.
@@ -49,5 +49,15 @@ Tambahkan `CRON_SECRET` (acak panjang) di environment Vercel agar Vercel Cron me
 ## Rotasi key
 
 1. Buat key baru di pengelolaan MCP portfolio.
-2. Pengaturan > Koneksi portfolio: tempel key baru, Simpan, lalu Tes koneksi.
+2. Super Admin > MCP Server: tempel key baru, Simpan, lalu Tes koneksi.
 3. Cabut key lama di server portfolio.
+
+
+## Peran pengirim
+
+Peran dipilih dari daftar umum (Mahasiswa, Pelajar, Engineer, Desainer, Pengusaha, Pendidik, Profesional, Lainnya). Setelah dipilih muncul isian detail (misalnya jurusan dan kampus). Keduanya disimpan digabung di kolom `role` (contoh: `Mahasiswa - Teknik Komputer di Universitas Syiah Kuala`). Saat dikirim ke portfolio, `role` dipotong 80 karakter sesuai batas tool `submit_feedback`; data lengkap tetap di database.
+
+
+## Super Admin
+
+Menu **Super Admin** (MCP Server dan Security) tampil di sidebar untuk semua pengunjung dengan ikon gembok. Membukanya meminta `SUPER_ADMIN_PASSWORD` (terpisah dari password admin; login admin tidak membukanya). Sesi super admin berlaku 15 menit, bisa dikunci lewat tombol **Kunci super admin**, dan dicek di server pada setiap API terkait. Koneksi portfolio ada di tab MCP Server; ganti password admin ada di tab Security.

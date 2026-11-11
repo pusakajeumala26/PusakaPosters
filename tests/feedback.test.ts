@@ -11,10 +11,12 @@ import {
   submitPortfolioFeedback,
   testPortfolioConnection,
 } from '../src/lib/portfolio-feedback-core';
+import { ROLE_DEFS, parseFeedbackFields as _pff } from '../src/lib/feedback-input';
+import { toMcpInput as _toMcp } from '../src/lib/feedback-queue';
 import { decryptSecret, encryptSecret, keyHint } from '../src/lib/portfolio-secret';
 
 const config = { url: 'https://portfolio.example.com/api/mcp', apiKey: 'mcp_live_secret_value_1234' };
-const input = { name: 'Budi', message: 'Aplikasinya sangat membantu.', rating: 5, role: 'Anggota', project: 'PusakaPosters' };
+const input = { name: 'Budi', message: 'Aplikasinya sangat membantu.', rating: 5, role: 'Mahasiswa', project: 'PusakaPosters' };
 
 const reply = (body, init = {}) =>
   async () => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' }, ...init });
@@ -209,17 +211,19 @@ test('dekripsi gagal dengan secret salah atau token dirusak', () => {
 import { initialsOf, parseFeedbackFields, sniffImage } from '../src/lib/feedback-input';
 import { deliverOne } from '../src/lib/feedback-queue';
 
-const base = { name: '  Budi   Santoso ', role: 'Anggota', message: 'Aplikasinya sangat membantu kami.', rating: '5', consent: 'true' };
+const base = { name: '  Budi   Santoso ', role: 'Mahasiswa', roleDetail: ' Teknik Komputer  di Universitas Syiah Kuala ', message: 'Aplikasinya sangat membantu kami.', rating: '5', consent: 'true' };
 
 test('isian feedback: normalisasi dan validasi', () => {
   const good = parseFeedbackFields(base);
   assert.equal(good.ok, true);
-  assert.deepEqual(good.value, { name: 'Budi Santoso', role: 'Anggota', message: 'Aplikasinya sangat membantu kami.', rating: 5 });
+  assert.deepEqual(good.value, { name: 'Budi Santoso', role: 'Mahasiswa - Teknik Komputer di Universitas Syiah Kuala', message: 'Aplikasinya sangat membantu kami.', rating: 5 });
   assert.equal(parseFeedbackFields({ ...base, role: '' }).value.role, null);
   for (const bad of [
     { name: '' },
     { name: 'x'.repeat(81) },
     { role: 'Admin' },
+    { roleDetail: '' },
+    { roleDetail: 'x'.repeat(121) },
     { message: 'pendek' },
     { message: 'x'.repeat(1501) },
     { rating: '0' },
@@ -267,14 +271,14 @@ function memoryStore(rows) {
     },
   };
 }
-const queued = { id: 'a', name: 'Budi', role: 'Anggota', message: 'Aplikasinya sangat membantu.', rating: 5 };
+const queued = { id: 'a', name: 'Budi', role: 'Mahasiswa - Teknik Komputer', message: 'Aplikasinya sangat membantu.', rating: 5 };
 
 test('antrean: sukses menandai SENT dan tidak pernah dikirim lagi (idempoten)', async () => {
   const store = memoryStore([queued]);
   let calls = 0;
   const send = async (payload) => {
     calls += 1;
-    assert.deepEqual(payload, { name: 'Budi', message: queued.message, rating: 5, role: 'Anggota', project: 'PusakaPosters' });
+    assert.deepEqual(payload, { name: 'Budi', message: queued.message, rating: 5, role: 'Mahasiswa - Teknik Komputer', project: 'PusakaPosters' });
     return { ok: true, remoteId: 'r1' };
   };
   assert.equal(await deliverOne(store, 'a', send, 'PusakaPosters'), 'sent');
@@ -338,7 +342,7 @@ function formRequest(fields, { origin } = {}) {
   for (const [k, v] of Object.entries(fields)) body.set(k, v);
   return new Request('https://app.example.com/api/feedback', { method: 'POST', body, headers: { origin: origin ?? 'https://app.example.com', host: 'app.example.com' } });
 }
-const goodForm = { name: 'Budi', role: 'Anggota', message: 'Aplikasinya sangat membantu kami.', rating: '5', consent: 'true', website: '' };
+const goodForm = { name: 'Budi', role: 'Mahasiswa', roleDetail: 'Teknik Komputer', message: 'Aplikasinya sangat membantu kami.', rating: '5', consent: 'true', website: '' };
 function makeHandler(overrides = {}) {
   const calls = { saved: [], scheduled: [] };
   const handler = createFeedbackHandler({
@@ -396,4 +400,16 @@ test('endpoint: kegagalan penyimpanan menjadi 503 tanpa membocorkan detail', asy
   assert.equal(res.status, 503);
   assert.equal((await res.text()).includes('postgres'), false);
   assert.equal(calls.scheduled.length, 0);
+});
+
+test('peran: tanpa peran detail diabaikan; detail panjang dipotong 80 untuk MCP', () => {
+  const none = _pff({ ...base, role: '', roleDetail: 'abaikan' });
+  assert.equal(none.ok, true);
+  assert.equal(none.value.role, null);
+  const long = _pff({ ...base, role: 'Lainnya', roleDetail: 'y'.repeat(120) });
+  assert.equal(long.value.role.length, 'Lainnya - '.length + 120);
+  const row = { id: 'a', name: 'B', role: long.value.role, message: 'Aplikasinya sangat membantu.', rating: 5, attempts: 1, uncertain: false };
+  assert.equal(_toMcp(row, 'P').role.length, 80);
+  assert.equal(ROLE_DEFS.length, 8);
+  assert.equal(ROLE_DEFS[0].value, 'Mahasiswa');
 });
