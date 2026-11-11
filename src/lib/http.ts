@@ -4,6 +4,7 @@ export class HttpError extends Error {
   constructor(
     public status: number,
     message: string,
+    public retryAfter?: number,
   ) {
     super(message);
   }
@@ -60,8 +61,9 @@ export function rateLimit(key: string, limit: number, windowMs: number) {
   }
   b.n += 1;
   if (b.n > limit) {
-    const wait = Math.ceil((b.reset - now) / 60000);
-    throw new HttpError(429, `Terlalu banyak percobaan. Coba lagi sekitar ${wait} menit lagi.`);
+    const retryAfter = Math.max(1, Math.ceil((b.reset - now) / 1000));
+    const wait = Math.ceil(retryAfter / 60);
+    throw new HttpError(429, `Terlalu banyak percobaan. Coba lagi sekitar ${wait} menit lagi.`, retryAfter);
   }
 }
 

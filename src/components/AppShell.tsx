@@ -11,6 +11,7 @@ import { usePwaInstall } from '@/lib/pwa';
 import { ContactAdmin } from './ContactAdmin';
 import {
   IconBoard,
+  IconChat,
   IconClose,
   IconDownload,
   IconGallery,
@@ -32,6 +33,7 @@ const ADMIN_NAV: NavItem[] = [
 
 const PAGE_META: Record<string, { title: string; sub?: string }> = {
   '/': { title: 'PusakaPosters' },
+  '/masukan': { title: 'Masukan', sub: 'Bagikan pengalaman Anda' },
   '/galeri': { title: 'Galeri Foto', sub: 'Foto anggota untuk tim desain' },
   '/status': { title: 'Status Poster', sub: 'Pantau poster tiap anggota' },
   '/pengaturan': { title: 'Pengaturan', sub: 'Atur upload dan akses admin' },
@@ -133,6 +135,10 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
           <Link href="/" className={navClass('/')} aria-current={current('/')}>
             <IconHome />
             Beranda
+          </Link>
+          <Link href="/masukan" className={navClass('/masukan')} aria-current={current('/masukan')}>
+            <IconChat />
+            Masukan
           </Link>
         </nav>
 

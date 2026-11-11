@@ -1364,6 +1364,29 @@ textarea.inp {
 .contact-list.compact .contact-info b { font-size: 13px; }
 .contact-list.compact .contact-chat { width: 44px; padding: 0; justify-content: center; }
 .contact-list.compact .contact-chat span { display: none; }
+.feedback-page { width: min(100%, 760px); margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.feedback-intro { display: flex; flex-direction: column; gap: 6px; }
+.feedback-eyebrow { color: var(--mute); font-size: 12px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+.feedback-intro h2 { margin: 0; font-size: clamp(24px, 5vw, 32px); letter-spacing: -.03em; }
+.feedback-intro p { max-width: 620px; margin: 0; color: var(--mute); }
+.feedback-card { display: flex; flex-direction: column; gap: 18px; padding: clamp(16px, 4vw, 28px); border: 1px solid var(--line); border-radius: 22px; background: var(--paper); }
+.feedback-fields-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.feedback-rating { min-width: 0; margin: 0; padding: 0; border: 0; }
+.feedback-rating legend { margin-bottom: 7px; }
+.feedback-stars { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.feedback-star { width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); cursor: pointer; font-size: 24px; color: #777; }
+.feedback-star:hover, .feedback-star.is-selected { border-color: var(--ink); background: var(--soft); color: var(--ink); }
+.feedback-star:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.feedback-rating-value { margin-left: 8px; color: var(--mute); font-size: 14px; }
+.feedback-count { color: var(--mute); font-size: 12px; text-align: right; }
+.feedback-consent { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; line-height: 1.5; }
+.feedback-consent input { width: 20px; height: 20px; flex: none; margin: 1px 0 0; accent-color: var(--ink); }
+.feedback-submit { min-height: 52px; }
+.feedback-success, .feedback-error, .feedback-offline { padding: 12px 14px; border: 1px solid var(--ink); border-radius: 12px; font-size: 14px; }
+.feedback-success { background: var(--soft); }
+.feedback-error, .feedback-offline { font-weight: 600; }
+.feedback-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+@media (max-width: 520px) { .feedback-fields-row { grid-template-columns: 1fr; } .feedback-card { border-radius: 18px; } }
 .card {
   border: 1px solid var(--line);
   border-radius: 24px;
