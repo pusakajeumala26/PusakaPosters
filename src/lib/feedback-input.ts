@@ -1,6 +1,28 @@
 /** Validasi isian feedback publik dan pengecekan magic byte foto. Murni; aman dipakai di server dan browser. */
 
-export const FEEDBACK_ROLES = ['Anggota', 'Pengurus', 'Alumni', 'Pengunjung'] as const;
+export type RoleDef = { value: string; detailLabel: string; example: string };
+
+/** Peran umum; setelah dipilih, pengunjung mengisi detailnya (label dan contoh mengikuti peran). */
+export const ROLE_DEFS: readonly RoleDef[] = [
+  { value: 'Mahasiswa', detailLabel: 'Jurusan dan kampus', example: 'Teknik Komputer di Universitas Syiah Kuala' },
+  { value: 'Pelajar', detailLabel: 'Sekolah dan kelas', example: 'Kelas XII di MAS Jeumala Amal' },
+  { value: 'Engineer', detailLabel: 'Bidang dan tempat bekerja', example: 'Software engineer di perusahaan teknologi' },
+  { value: 'Desainer', detailLabel: 'Spesialisasi dan tempat bekerja', example: 'UI/UX designer di studio kreatif' },
+  { value: 'Pengusaha', detailLabel: 'Bidang usaha', example: 'Pemilik toko perlengkapan ibadah' },
+  { value: 'Pendidik', detailLabel: 'Mata pelajaran dan institusi', example: 'Guru matematika di sebuah SMA' },
+  { value: 'Profesional', detailLabel: 'Posisi dan perusahaan', example: 'Manajer proyek di perusahaan konstruksi' },
+  { value: 'Lainnya', detailLabel: 'Jelaskan peran Anda', example: 'Relawan komunitas' },
+];
+export const FEEDBACK_ROLES: readonly string[] = ROLE_DEFS.map((def) => def.value);
+export const ROLE_DETAIL_MAX = 120;
+/** Batas panjang role pada tool submit_feedback di portfolio. */
+export const MCP_ROLE_MAX = 80;
+
+/** Peran + detail dalam satu teks, mis. "Mahasiswa - Teknik Komputer di Universitas Syiah Kuala". */
+export const formatRole = (role: string, detail: string) => `${role} - ${detail}`;
+
+/** Potong untuk batas role di portfolio (80 karakter) tanpa meninggalkan spasi di ujung. */
+export const clampRoleForMcp = (role: string) => role.slice(0, MCP_ROLE_MAX).trim();
 export const NAME_MAX = 80;
 export const MESSAGE_MIN = 10;
 export const MESSAGE_MAX = 1500;
@@ -18,6 +40,7 @@ const clean = (value: unknown) => (typeof value === 'string' ? value.replace(CON
 export function parseFeedbackFields(raw: {
   name?: unknown;
   role?: unknown;
+  roleDetail?: unknown;
   message?: unknown;
   rating?: unknown;
   consent?: unknown;
@@ -27,7 +50,14 @@ export function parseFeedbackFields(raw: {
   if (name.length > NAME_MAX) return { ok: false, message: `Nama maksimal ${NAME_MAX} karakter.` };
 
   const roleText = clean(raw.role).trim();
-  if (roleText && !(FEEDBACK_ROLES as readonly string[]).includes(roleText)) return { ok: false, message: 'Peran tidak dikenal.' };
+  if (roleText && !FEEDBACK_ROLES.includes(roleText)) return { ok: false, message: 'Peran tidak dikenal.' };
+  let role: string | null = null;
+  if (roleText) {
+    const detail = clean(raw.roleDetail).replace(/\s+/g, ' ').trim();
+    if (!detail) return { ok: false, message: 'Isi detail peran.' };
+    if (detail.length > ROLE_DETAIL_MAX) return { ok: false, message: `Detail peran maksimal ${ROLE_DETAIL_MAX} karakter.` };
+    role = formatRole(roleText, detail);
+  }
 
   const message = clean(raw.message).replace(/\r\n?/g, '\n').trim();
   if (message.length < MESSAGE_MIN) return { ok: false, message: `Penilaian minimal ${MESSAGE_MIN} karakter.` };
@@ -39,7 +69,7 @@ export function parseFeedbackFields(raw: {
   const consent = raw.consent === true || raw.consent === 'true' || raw.consent === 'on';
   if (!consent) return { ok: false, message: 'Centang persetujuan agar masukan dapat dikirim.' };
 
-  return { ok: true, value: { name, role: roleText || null, message, rating } };
+  return { ok: true, value: { name, role, message, rating } };
 }
 
 /** Kenali jenis gambar dari byte pertama (bukan dari nama file atau Content-Type kiriman klien). */
