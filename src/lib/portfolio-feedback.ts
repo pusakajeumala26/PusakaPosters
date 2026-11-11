@@ -21,7 +21,9 @@ const TIMEOUT_MS = 10_000;
 
 function readResult(payload: unknown): FeedbackResult {
   if (!payload || typeof payload !== 'object') return { status: 'unavailable' };
-  const result = (payload as { result?: unknown }).result;
+  const envelope = payload as { result?: unknown };
+  if (Object.prototype.hasOwnProperty.call(envelope, 'error')) return { status: 'unavailable' };
+  const result = envelope.result;
   if (!result || typeof result !== 'object') return { status: 'unavailable' };
   const value = result as { isError?: unknown; structuredContent?: unknown };
   if (value.isError === true) return { status: 'invalid' };
