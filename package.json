@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@mediapipe/selfie_segmentation": "^0.1.1675465747",
-    "@prisma/client": "^7.10.1",
+    "@prisma/client": "6.19.3",
     "@supabase/supabase-js": "^2.57.0",
     "@tensorflow-models/body-segmentation": "^1.0.2",
     "@tensorflow/tfjs-backend-webgl": "^4.22.0",
@@ -42,7 +42,7 @@
     "@types/react-dom": "^19.1.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^15.5.29",
-    "prisma": "^7.10.1",
+    "prisma": "6.19.3",
     "tsx": "^4.20.6",
     "typescript": "^7.0.2"
   },
