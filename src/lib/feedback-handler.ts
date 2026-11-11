@@ -20,7 +20,7 @@ type Deps = {
 const reply = (body: unknown, status = 200, headers?: HeadersInit) => Response.json(body, { status, headers });
 
 /**
- * POST multipart/form-data: name, role, message, rating, consent, avatar (opsional), website (honeypot).
+ * POST multipart/form-data: name, role, roleDetail, message, rating, consent, avatar (opsional), website (honeypot).
  * Feedback disimpan lebih dulu; pengiriman ke portfolio terjadi di latar belakang lewat antrean.
  */
 export function createFeedbackHandler({
@@ -59,6 +59,7 @@ export function createFeedbackHandler({
       const parsed = parseFeedbackFields({
         name: text('name'),
         role: text('role'),
+        roleDetail: text('roleDetail'),
         message: text('message'),
         rating: text('rating'),
         consent: text('consent'),
