@@ -4,6 +4,7 @@ import { removePaths, signedUrls, uploadWebp } from './supabase';
 import { decryptSecret, encryptSecret, keyHint } from './portfolio-secret';
 import {
   describeFailure,
+  describeStoredFailure,
   parseMcpUrl,
   submitPortfolioFeedback,
   testPortfolioConnection,
@@ -106,17 +107,26 @@ export async function runConnectionTest() {
   }
   const result = await testPortfolioConnection(connection.config);
   let note: string;
-  if (!result.ok) note = describeFailure(result.kind);
+  if (!result.ok) {
+    const reason = describeFailure(result.kind);
+    note = result.stage === 'health'
+      ? `Server portfolio tidak terjangkau (health check tanpa key). ${reason}`
+      : `Server terjangkau, tetapi permintaan dengan key gagal. ${reason}`;
+  } else if (result.scopeMissing) note = 'Server terjangkau dan key diterima, tetapi daftar tool kosong: key tidak punya scope feedback:write.';
   else if (result.toolFound === false) note = 'Terhubung, tetapi tool submit_feedback tidak ditemukan di server portfolio.';
   else if (result.toolFound === null) note = 'Terhubung dan key diterima (server tidak menyebut daftar tool).';
   else if (result.missingFields.length) note = `Terhubung. Field belum didukung tool: ${result.missingFields.join(', ')}.`;
-  else note = result.avatarField ? `Terhubung. Tool menerima field foto (${result.avatarField}).` : 'Terhubung. Tool submit_feedback siap; belum ada field foto profil.';
+  else note = result.avatarField
+    ? `Terhubung. Tool menerima ${result.avatarField}, tetapi foto tidak dikirim karena belum punya URL publik permanen (portfolio memakai inisial).`
+    : 'Terhubung. Tool submit_feedback siap.';
+  if (result.ok && result.health?.version) note += ` Versi portfolio ${result.health.version}.`;
   const ok = result.ok && result.toolFound !== false;
+  const lastKind = result.ok ? (result.scopeMissing ? 'scope_missing' : ok ? 'ok' : 'tool_missing') : result.kind;
   await db.portfolioConnection.update({
     where: { id: 1 },
-    data: { lastTestAt: new Date(), lastTestOk: ok, lastTestKind: result.ok ? (ok ? 'ok' : 'tool_missing') : result.kind, lastTestMs: result.latencyMs, lastTestNote: note },
+    data: { lastTestAt: new Date(), lastTestOk: ok, lastTestKind: lastKind, lastTestMs: result.latencyMs, lastTestNote: note },
   });
-  return { ok, kind: result.ok ? 'ok' : result.kind, note, ms: result.latencyMs };
+  return { ok, kind: lastKind, note, ms: result.latencyMs };
 }
 
 /* ------------------------------ pengiriman ------------------------------ */
@@ -129,7 +139,7 @@ const store: QueueStore = {
     });
     if (claimed.count !== 1) return null;
     const row = await db.feedback.findUnique({ where: { id } });
-    return row ? { id: row.id, name: row.name, role: row.role, message: row.message, rating: row.rating, attempts: row.attempts, uncertain: row.uncertain } : null;
+    return row ? { id: row.id, name: row.name, role: row.role, message: row.message, rating: row.rating, attempts: row.attempts } : null;
   },
   async finish(id, update) {
     await db.feedback.update({ where: { id }, data: update });
@@ -217,8 +227,7 @@ export async function listFeedback(take = 100): Promise<FeedbackRowView[]> {
     syncStatus: row.syncStatus,
     attempts: row.attempts,
     lastError: row.lastError,
-    lastErrorText: row.lastError ? describeFailure(row.lastError) : null,
-    uncertain: row.uncertain,
+    lastErrorText: describeStoredFailure(row.lastError),
     nextAttemptAt: row.nextAttemptAt?.toISOString() ?? null,
     lastAttemptAt: row.lastAttemptAt?.toISOString() ?? null,
     sentAt: row.sentAt?.toISOString() ?? null,
