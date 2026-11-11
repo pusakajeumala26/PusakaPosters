@@ -7,6 +7,8 @@ import { downloadPhotosZip } from '@/lib/zip-client';
 import { DatePicker } from './DatePicker';
 import { useToast } from './ToastProvider';
 import { IconLock } from './icons';
+import { PortfolioConnectionCard } from './PortfolioConnectionCard';
+import type { PortfolioStatus } from '@/lib/feedback-types';
 
 async function patch(url: string, body: unknown, method = 'PATCH') {
   const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -14,7 +16,7 @@ async function patch(url: string, body: unknown, method = 'PATCH') {
   if (!res.ok) throw new Error(data.error ?? 'Perubahan gagal disimpan.');
 }
 
-export function SettingsView({ settings, members }: { settings: SettingsData; members: MemberView[] }) {
+export function SettingsView({ settings, members, portfolio }: { settings: SettingsData; members: MemberView[]; portfolio: PortfolioStatus }) {
   const router = useRouter();
   const toast = useToast();
 
@@ -186,6 +188,8 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
           </div>
         </div>
       </section>
+
+      <PortfolioConnectionCard initial={portfolio} />
 
       <section className="card security-card">
         <h3>Keamanan</h3>
