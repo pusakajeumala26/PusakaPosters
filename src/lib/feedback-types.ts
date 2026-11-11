@@ -21,7 +21,6 @@ export type FeedbackRowView = {
   attempts: number;
   lastError: string | null;
   lastErrorText: string | null;
-  uncertain: boolean;
   nextAttemptAt: string | null;
   lastAttemptAt: string | null;
   sentAt: string | null;
