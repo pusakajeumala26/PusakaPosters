@@ -9,6 +9,7 @@ import { useDialog } from '@/lib/use-dialog';
 import { usePresence } from '@/lib/use-presence';
 import { usePwaInstall } from '@/lib/pwa';
 import { ContactAdmin } from './ContactAdmin';
+import { FeedbackDialog } from './FeedbackForm';
 import {
   IconBoard,
   IconChat,
@@ -28,18 +29,21 @@ type NavItem = { href: string; label: string; Icon: ComponentType<{ size?: numbe
 const ADMIN_NAV: NavItem[] = [
   { href: '/galeri', label: 'Galeri Foto', Icon: IconGallery },
   { href: '/status', label: 'Status Poster', Icon: IconBoard },
+  { href: '/feedback', label: 'Feedback', Icon: IconChat },
   { href: '/pengaturan', label: 'Pengaturan', Icon: IconSliders },
 ];
 
 const PAGE_META: Record<string, { title: string; sub?: string }> = {
   '/': { title: 'PusakaPosters' },
-  '/masukan': { title: 'Masukan', sub: 'Bagikan pengalaman Anda' },
+  '/masukan': { title: 'Beri Feedback', sub: 'Bagikan pengalaman Anda' },
+  '/feedback': { title: 'Feedback', sub: 'Masukan publik dan status pengirimannya' },
   '/galeri': { title: 'Galeri Foto', sub: 'Foto anggota untuk tim desain' },
   '/status': { title: 'Status Poster', sub: 'Pantau poster tiap anggota' },
   '/pengaturan': { title: 'Pengaturan', sub: 'Atur upload dan akses admin' },
 };
 
 const DESKTOP = '(min-width: 1024px)';
+const FEEDBACK_AUTO_OPEN_MS = 3000;
 
 function useIsDesktop() {
   return useSyncExternalStore(
@@ -61,11 +65,24 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
   const desktop = useIsDesktop();
   const [open, setOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const autoPrompted = useRef(false);
   const [iosHelpOpen, setIosHelpOpen] = useState(false);
   const meta = PAGE_META[pathname] ?? PAGE_META['/'];
   const sub = pathname === '/' ? `Leting ${letingName}` : meta.sub;
 
   useEffect(() => setOpen(false), [pathname]);
+
+  // Modal feedback terbuka sendiri ~3 detik setelah beranda dimuat (sekali per pemuatan halaman; admin tidak diganggu).
+  useEffect(() => {
+    if (pathname !== '/' || admin || autoPrompted.current) return;
+    const timer = window.setTimeout(() => {
+      if (autoPrompted.current || document.querySelector('.ov')) return;
+      autoPrompted.current = true;
+      setFeedbackOpen(true);
+    }, FEEDBACK_AUTO_OPEN_MS);
+    return () => window.clearTimeout(timer);
+  }, [pathname, admin]);
 
   const drawerOpen = open && !desktop;
   const contactsPresence = usePresence(contactsOpen, 340);
@@ -80,6 +97,7 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
       setOpen(false);
       setIosHelpOpen(false);
       setContactsOpen(false);
+      setFeedbackOpen(false);
       toast('Aplikasi berhasil dipasang');
     }
     wasInstalled.current = installed;
@@ -136,10 +154,10 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
             <IconHome />
             Beranda
           </Link>
-          <Link href="/masukan" className={navClass('/masukan')} aria-current={current('/masukan')}>
+          <button type="button" className="nav nav-btn" onClick={() => { setOpen(false); setFeedbackOpen(true); }}>
             <IconChat />
-            Masukan
-          </Link>
+            Beri Feedback
+          </button>
         </nav>
 
         <nav className="nav-group" aria-label="Admin">
@@ -219,6 +237,7 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
           <ContactAdmin />
         </section>
       </div>}
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       {iosHelpPresence.present && typeof document !== 'undefined' && createPortal(<div className="ov install-overlay" data-state={iosHelpPresence.phase} aria-hidden={!iosHelpOpen} inert={!iosHelpOpen}>
         <button type="button" className="scrim" aria-label="Tutup petunjuk instal" tabIndex={-1} onClick={() => setIosHelpOpen(false)} />
         <section ref={iosHelpRef} className="install-dialog" role="dialog" aria-modal="true" aria-labelledby="install-title" tabIndex={-1}>
