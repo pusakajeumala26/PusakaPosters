@@ -21,6 +21,8 @@ export type MemberView = {
   createdAt: string;
   /** URL bertanda tangan: foto tanpa latar, atau foto asli jika belum ada. */
   photoUrl: string | null;
+  /** Alamat thumbnail kecil (tambahkan &w=160 atau &w=480 lewat thumbSrc) untuk daftar dan galeri. */
+  thumbUrl: string | null;
   hasCutout: boolean;
   /** Hanya terisi untuk admin */
   phone?: string;
