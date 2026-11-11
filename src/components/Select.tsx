@@ -60,13 +60,17 @@ export function Select({
     };
     update();
     const closeOnViewport = () => setOpen(false);
+    const closeOnOuterScroll = (event: Event) => {
+      if (document.getElementById(`${uid}-panel`)?.contains(event.target as Node)) return;
+      setOpen(false);
+    };
     window.addEventListener('resize', closeOnViewport);
-    window.addEventListener('scroll', closeOnViewport, true);
+    window.addEventListener('scroll', closeOnOuterScroll, true);
     const focusTimer = window.setTimeout(() => (searchable ? searchRef.current : document.getElementById(`${uid}-option-${selectedOptionValue}`))?.focus(), 0);
     return () => {
       clearTimeout(focusTimer);
       window.removeEventListener('resize', closeOnViewport);
-      window.removeEventListener('scroll', closeOnViewport, true);
+      window.removeEventListener('scroll', closeOnOuterScroll, true);
     };
   }, [open, options, value, searchable, uid, selectedOptionValue]);
 
