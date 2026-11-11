@@ -3,6 +3,7 @@ import { APP_TZ, APP_TZ_OFFSET_MS } from './constants';
 import { db } from './db';
 import { fmtPhone, maskPhone } from './format';
 import { signedUrls } from './supabase';
+import { thumbPath } from './thumb';
 import type { MemberView, SettingsView, Stats } from './types';
 
 const DAY_MS = 86_400_000;
@@ -30,6 +31,7 @@ function toView(m: Member, admin: boolean, urls: Record<string, string>): Member
     status: m.status,
     createdAt: m.createdAt.toISOString(),
     photoUrl: shownPath ? (urls[shownPath] ?? null) : null,
+    thumbUrl: shownPath ? thumbPath(m.id, m.updatedAt.getTime()) : null,
     hasCutout: !!m.cutoutPath,
   };
   if (admin) {
