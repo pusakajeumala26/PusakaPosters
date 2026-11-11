@@ -77,6 +77,7 @@ test('helper rejects tool errors, malformed responses, non-200 statuses, and tim
   try {
     const cases: Array<[typeof fetch, FeedbackResult]> = [
       [(async () => new Response(JSON.stringify({ result: { isError: true } }), { status: 200 })) as typeof fetch, { status: 'invalid' }],
+      [(async () => new Response(JSON.stringify({ error: { code: -1 }, result: pending.result }), { status: 200 })) as typeof fetch, { status: 'unavailable' }],
       [(async () => new Response('{', { status: 200 })) as typeof fetch, { status: 'unavailable' }],
       [(async () => new Response(JSON.stringify({ result: {} }), { status: 200 })) as typeof fetch, { status: 'unavailable' }],
       [(async () => new Response(JSON.stringify(pending), { status: 201 })) as typeof fetch, { status: 'unavailable' }],
