@@ -33,13 +33,20 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/pengaturan', label: 'Pengaturan', Icon: IconSliders },
 ];
 
+const SUPER_NAV: NavItem[] = [
+  { href: '/super-admin/mcp', label: 'MCP Server', Icon: IconSliders },
+  { href: '/super-admin/security', label: 'Security', Icon: IconLock },
+];
+
 const PAGE_META: Record<string, { title: string; sub?: string }> = {
   '/': { title: 'PusakaPosters' },
   '/masukan': { title: 'Beri Feedback', sub: 'Bagikan pengalaman Anda' },
   '/feedback': { title: 'Feedback', sub: 'Masukan publik dan status pengirimannya' },
   '/galeri': { title: 'Galeri Foto', sub: 'Foto anggota untuk tim desain' },
   '/status': { title: 'Status Poster', sub: 'Pantau poster tiap anggota' },
-  '/pengaturan': { title: 'Pengaturan', sub: 'Atur upload dan akses admin' },
+  '/pengaturan': { title: 'Pengaturan', sub: 'Atur upload dan data leting' },
+  '/super-admin/mcp': { title: 'MCP Server', sub: 'Koneksi portfolio untuk feedback' },
+  '/super-admin/security': { title: 'Security', sub: 'Password admin' },
 };
 
 const DESKTOP = '(min-width: 1024px)';
@@ -57,7 +64,7 @@ function useIsDesktop() {
   );
 }
 
-export function AppShell({ letingName, admin, children }: { letingName: string; admin: boolean; children: ReactNode }) {
+export function AppShell({ letingName, admin, superAdmin, children }: { letingName: string; admin: boolean; superAdmin: boolean; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const toast = useToast();
@@ -106,6 +113,12 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
   async function logout() {
     await fetch('/api/admin/logout', { method: 'POST' });
     toast('Keluar dari mode admin');
+    router.refresh();
+  }
+
+  async function lockSuper() {
+    await fetch('/api/admin/super-admin/logout', { method: 'POST' });
+    toast('Super admin dikunci');
     router.refresh();
   }
 
@@ -175,6 +188,21 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
           ))}
         </nav>
 
+        <nav className="nav-group" aria-label="Super Admin">
+          <div className="nav-cap">Super Admin</div>
+          {SUPER_NAV.map(({ href, label, Icon }) => (
+            <Link key={href} href={href} className={navClass(href)} aria-current={current(href)}>
+              <Icon />
+              {label}
+              {!superAdmin && (
+                <span className="lk" role="img" aria-label="Terkunci">
+                  <IconLock size={16} />
+                </span>
+              )}
+            </Link>
+          ))}
+        </nav>
+
         <div className="side-foot">
           {canInstall && !installed && <button type="button" className="btn ghost block" onClick={onInstall}>
             <IconDownload size={18} />
@@ -196,6 +224,18 @@ export function AppShell({ letingName, admin, children }: { letingName: string; 
               <IconLock size={18} />
               Masuk sebagai admin
             </Link>
+          )}
+          {superAdmin && (
+            <>
+              <div className="adm">
+                <span className="dot" aria-hidden="true" />
+                Super admin terbuka
+              </div>
+              <button type="button" className="btn ghost block" onClick={lockSuper}>
+                <IconLock size={18} />
+                Kunci super admin
+              </button>
+            </>
           )}
           <button type="button" className="btn ghost block" onClick={() => setContactsOpen(true)}>Kontak pengurus</button>
         </div>
