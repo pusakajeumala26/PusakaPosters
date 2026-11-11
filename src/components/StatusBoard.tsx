@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { formatWhen } from '@/lib/format';
+import { thumbSrc } from '@/lib/thumb';
 import { STATUS_META, type MemberView, type PosterStatus } from '@/lib/types';
 import { Avatar } from './Avatar';
 import { IconChevronLeft, IconChevronRight } from './icons';
@@ -62,7 +63,7 @@ export function StatusBoard({ members }: { members: MemberView[] }) {
               {list.map((m) => (
                 <div className="kcard" key={m.id}>
                   <div className="kwho">
-                    <Avatar name={m.name} src={m.photoUrl} />
+                    <Avatar name={m.name} src={thumbSrc(m.thumbUrl, 160)} />
                     <div>
                       <b>{m.name}</b>
                       <span suppressHydrationWarning>{formatWhen(m.createdAt)}</span>
