@@ -10,6 +10,12 @@ import {
   planAfterFailure,
   submitPortfolioFeedback,
   testPortfolioConnection,
+  describeStoredFailure,
+  healthUrl,
+  kindFromCode,
+  packFailure,
+  unpackFailure,
+  validAvatarUrl,
 } from '../src/lib/portfolio-feedback-core';
 import { ROLE_DEFS, parseFeedbackFields as _pff } from '../src/lib/feedback-input';
 import { toMcpInput as _toMcp } from '../src/lib/feedback-queue';
@@ -40,21 +46,20 @@ test('mengirim sesuai kontrak tool submit_feedback dengan Bearer key', async () 
   assert.deepEqual(seen.body.params.arguments, input);
 });
 
-test('klasifikasi status HTTP', async () => {
+test('klasifikasi status HTTP (cadangan bila body bukan JSON-RPC)', async () => {
   const cases = [
-    [401, 'unauthorized', false],
-    [403, 'unauthorized', false],
-    [429, 'rate_limited', false],
-    [500, 'server', true],
-    [503, 'server', true],
-    [400, 'invalid', false],
-    [404, 'invalid', false],
+    [401, 'unauthorized'],
+    [403, 'forbidden_scope'],
+    [429, 'rate_limited'],
+    [500, 'server'],
+    [503, 'server'],
+    [400, 'invalid'],
+    [404, 'invalid'],
   ];
-  for (const [status, kind, uncertain] of cases) {
+  for (const [status, kind] of cases) {
     const result = await submitPortfolioFeedback(input, config, { fetchImpl: async () => new Response('x', { status }) });
     assert.equal(result.ok, false);
     assert.equal(result.kind, kind, `status ${status}`);
-    assert.equal(result.uncertain, uncertain, `uncertain ${status}`);
     assert.equal(result.httpStatus, status);
   }
 });
@@ -78,7 +83,6 @@ test('isError true pada HTTP 200 dianggap invalid dan tidak diulang', async () =
   });
   assert.equal(result.ok, false);
   assert.equal(result.kind, 'invalid');
-  assert.equal(result.uncertain, false);
   assert.equal(planAfterFailure(result, 1, new Date()).status, 'failed');
 });
 
@@ -91,7 +95,6 @@ test('error DNS, jaringan, dan timeout dibedakan', async () => {
 
   const viaFetch = await submitPortfolioFeedback(input, config, { fetchImpl: async () => { throw dns; } });
   assert.equal(viaFetch.kind, 'dns');
-  assert.equal(viaFetch.uncertain, false);
 });
 
 test('timeout 10 dtk memutus permintaan yang menggantung', async () => {
@@ -103,7 +106,6 @@ test('timeout 10 dtk memutus permintaan yang menggantung', async () => {
       }),
   });
   assert.equal(result.kind, 'timeout');
-  assert.equal(result.uncertain, true);
 });
 
 test('redirect ditolak dan respons rusak dianggap server', async () => {
@@ -111,7 +113,6 @@ test('redirect ditolak dan respons rusak dianggap server', async () => {
   assert.equal(redirect.kind, 'invalid');
   const broken = await submitPortfolioFeedback(input, config, { fetchImpl: reply('bukan json') });
   assert.equal(broken.kind, 'server');
-  assert.equal(broken.uncertain, true);
   const wrongStatus = await submitPortfolioFeedback(input, config, {
     fetchImpl: reply({ jsonrpc: '2.0', id: '1', result: { structuredContent: { id: 'x', status: 'published' } } }),
   });
@@ -146,7 +147,7 @@ test('rencana ulang: hanya penyebab sementara, maksimal 5 percobaan', () => {
     assert.equal(plan.status, 'queued', kind);
     assert.equal(plan.nextAttemptAt.getTime(), now.getTime() + 30_000);
   }
-  for (const kind of ['unauthorized', 'invalid']) {
+  for (const kind of ['unauthorized', 'forbidden_scope', 'invalid', 'protocol']) {
     assert.deepEqual(planAfterFailure({ kind }, 1, now, mid), { status: 'failed', nextAttemptAt: null }, kind);
   }
   assert.equal(planAfterFailure({ kind: 'network' }, MAX_ATTEMPTS - 1, now, mid).status, 'queued');
@@ -164,29 +165,6 @@ test('validasi URL MCP', () => {
   for (const bad of ['', 'abc', 'http://alfizilham.vercel.app/api/mcp', 'https://user:pw@a.example.com/x', 'https://localhost/x', 'https://127.0.0.1/x', 'https://10.0.0.5/x', 'https://[::1]/x', 'https://intranet/x', 'https://svc.internal/x']) {
     assert.equal(parseMcpUrl(bad).ok, false, bad);
   }
-});
-
-test('tes koneksi memakai tools/list dan melaporkan field yang hilang', async () => {
-  let method;
-  const tools = { jsonrpc: '2.0', id: '1', result: { tools: [{ name: 'submit_feedback', inputSchema: { properties: { name: {}, message: {}, rating: {}, role: {}, company: {}, project: {} } } }] } };
-  const result = await testPortfolioConnection(config, {
-    fetchImpl: async (_url, init) => {
-      method = JSON.parse(init.body).method;
-      return new Response(JSON.stringify(tools), { status: 200 });
-    },
-  });
-  assert.equal(method, 'tools/list');
-  assert.equal(result.ok, true);
-  assert.equal(result.toolFound, true);
-  assert.deepEqual(result.missingFields, []);
-  assert.equal(result.avatarField, null);
-
-  const missing = await testPortfolioConnection(config, { fetchImpl: reply({ result: { tools: [] } }) });
-  assert.equal(missing.toolFound, false);
-
-  const denied = await testPortfolioConnection(config, { fetchImpl: async () => new Response('', { status: 401 }) });
-  assert.equal(denied.ok, false);
-  assert.equal(denied.kind, 'unauthorized');
 });
 
 test('enkripsi key: bolak-balik, acak per enkripsi, tidak memuat teks asli', () => {
@@ -209,7 +187,7 @@ test('dekripsi gagal dengan secret salah atau token dirusak', () => {
 
 /* ------------------------------ input ------------------------------ */
 import { initialsOf, parseFeedbackFields, sniffImage } from '../src/lib/feedback-input';
-import { deliverOne } from '../src/lib/feedback-queue';
+import { deliverOne, toMcpInput } from '../src/lib/feedback-queue';
 
 const base = { name: '  Budi   Santoso ', role: 'Mahasiswa', roleDetail: ' Teknik Komputer  di Universitas Syiah Kuala ', message: 'Aplikasinya sangat membantu kami.', rating: '5', consent: 'true' };
 
@@ -256,7 +234,7 @@ test('inisial avatar', () => {
 /* ------------------------------ antrean ------------------------------ */
 
 function memoryStore(rows) {
-  const data = new Map(rows.map((row) => [row.id, { syncStatus: 'QUEUED', attempts: 0, nextAttemptAt: null, uncertain: false, ...row }]));
+  const data = new Map(rows.map((row) => [row.id, { syncStatus: 'QUEUED', attempts: 0, nextAttemptAt: null, ...row }]));
   return {
     data,
     async claim(id, now, leaseUntil) {
@@ -278,7 +256,7 @@ test('antrean: sukses menandai SENT dan tidak pernah dikirim lagi (idempoten)', 
   let calls = 0;
   const send = async (payload) => {
     calls += 1;
-    assert.deepEqual(payload, { name: 'Budi', message: queued.message, rating: 5, role: 'Mahasiswa - Teknik Komputer', project: 'PusakaPosters' });
+    assert.deepEqual(payload, { name: 'Budi', message: queued.message, rating: 5, role: 'Mahasiswa - Teknik Komputer', project: 'PusakaPosters', idempotency_key: 'a' });
     return { ok: true, remoteId: 'r1' };
   };
   assert.equal(await deliverOne(store, 'a', send, 'PusakaPosters'), 'sent');
@@ -299,7 +277,7 @@ test('antrean: dua pemroses bersamaan hanya satu yang mengirim (lease)', async (
 
 test('antrean: gagal sementara dijadwalkan ulang, lalu FAILED setelah 5 percobaan', async () => {
   const store = memoryStore([queued]);
-  const send = async () => ({ ok: false, kind: 'timeout', uncertain: true });
+  const send = async () => ({ ok: false, kind: 'timeout' });
   let now = new Date('2026-01-01T00:00:00Z');
   const outcomes = [];
   for (let i = 0; i < 5; i++) {
@@ -312,7 +290,6 @@ test('antrean: gagal sementara dijadwalkan ulang, lalu FAILED setelah 5 percobaa
   assert.equal(row.syncStatus, 'FAILED');
   assert.equal(row.attempts, 5);
   assert.equal(row.lastError, 'timeout');
-  assert.equal(row.uncertain, true);
   assert.equal(row.nextAttemptAt, null);
 });
 
@@ -320,10 +297,9 @@ test('antrean: belum jatuh tempo dilewati; 401 langsung FAILED tanpa ulang', asy
   const store = memoryStore([{ ...queued, nextAttemptAt: new Date('2099-01-01') }]);
   assert.equal(await deliverOne(store, 'a', async () => assert.fail('tidak boleh kirim'), 'P'), 'skipped');
   const store2 = memoryStore([queued]);
-  const outcome = await deliverOne(store2, 'a', async () => ({ ok: false, kind: 'unauthorized', httpStatus: 401, uncertain: false }), 'P');
+  const outcome = await deliverOne(store2, 'a', async () => ({ ok: false, kind: 'unauthorized', httpStatus: 401 }), 'P');
   assert.equal(outcome, 'failed');
   assert.equal(store2.data.get('a').lastError, 'unauthorized');
-  assert.equal(store2.data.get('a').uncertain, false);
 });
 
 test('antrean: exception tak terduga diperlakukan sebagai kegagalan jaringan', async () => {
@@ -408,8 +384,238 @@ test('peran: tanpa peran detail diabaikan; detail panjang dipotong 80 untuk MCP'
   assert.equal(none.value.role, null);
   const long = _pff({ ...base, role: 'Lainnya', roleDetail: 'y'.repeat(120) });
   assert.equal(long.value.role.length, 'Lainnya - '.length + 120);
-  const row = { id: 'a', name: 'B', role: long.value.role, message: 'Aplikasinya sangat membantu.', rating: 5, attempts: 1, uncertain: false };
+  const row = { id: 'a', name: 'B', role: long.value.role, message: 'Aplikasinya sangat membantu.', rating: 5, attempts: 1 };
   assert.equal(_toMcp(row, 'P').role.length, 80);
   assert.equal(ROLE_DEFS.length, 8);
   assert.equal(ROLE_DEFS[0].value, 'Mahasiswa');
+});
+
+/* ------------------------------ kontrak portfolio terbaru ------------------------------ */
+
+const rpcError = (code, data, extra = {}) => ({ jsonrpc: '2.0', id: '1', error: { code, message: 'x', data, ...extra } });
+
+test('duplicate:true dianggap BERHASIL (sent), termasuk lewat antrean', async () => {
+  const dup = { jsonrpc: '2.0', id: '1', result: { structuredContent: { id: 'fb_1', status: 'approved', duplicate: true } } };
+  const result = await submitPortfolioFeedback(input, config, { fetchImpl: reply(dup) });
+  assert.deepEqual(result, { ok: true, remoteId: 'fb_1', duplicate: true });
+
+  const store = memoryStore([queued]);
+  const outcome = await deliverOne(store, 'a', (payload) => submitPortfolioFeedback(payload, config, { fetchImpl: reply(dup) }), 'P');
+  assert.equal(outcome, 'sent');
+  assert.equal(store.data.get('a').syncStatus, 'SENT');
+  assert.equal(store.data.get('a').remoteId, 'fb_1');
+  assert.equal(store.data.get('a').lastError, null);
+});
+
+test('idempotency_key = id feedback di setiap pengiriman dan retry', async () => {
+  const store = memoryStore([queued]);
+  const keys = [];
+  const answers = [{ ok: false, kind: 'timeout' }, { ok: true, remoteId: 'r1', duplicate: true }];
+  const send = async (payload) => { keys.push(payload.idempotency_key); return answers.shift(); };
+  let now = new Date('2026-01-01T00:00:00Z');
+  assert.equal(await deliverOne(store, 'a', send, 'P', now, () => 0.5), 'queued');
+  now = new Date(store.data.get('a').nextAttemptAt.getTime() + 1);
+  assert.equal(await deliverOne(store, 'a', send, 'P', now, () => 0.5), 'sent');
+  assert.deepEqual(keys, ['a', 'a']);
+
+  let seen;
+  await submitPortfolioFeedback({ ...input, idempotency_key: 'k'.repeat(80) }, config, {
+    fetchImpl: async (_u, init) => { seen = JSON.parse(init.body).params.arguments; return new Response(JSON.stringify(ok), { status: 200 }); },
+  });
+  assert.equal(seen.idempotency_key.length, 80);
+  await submitPortfolioFeedback({ ...input, idempotency_key: 'k'.repeat(81) }, config, {
+    fetchImpl: async (_u, init) => { seen = JSON.parse(init.body).params.arguments; return new Response(JSON.stringify(ok), { status: 200 }); },
+  });
+  assert.equal('idempotency_key' in seen, false);
+});
+
+test('klasifikasi dari error.data.code, bukan hanya status HTTP', async () => {
+  const cases = [
+    ['unauthorized', 'unauthorized'],
+    ['forbidden_scope', 'forbidden_scope'],
+    ['rate_limited', 'rate_limited'],
+    ['parse_error', 'protocol'],
+    ['invalid_request', 'protocol'],
+    ['method_not_found', 'protocol'],
+    ['invalid_params', 'invalid'],
+    ['internal', 'server'],
+  ];
+  for (const [code, kind] of cases) {
+    const viaOk = await submitPortfolioFeedback(input, config, { fetchImpl: reply(rpcError(-32000, { code, retryable: code === 'internal' })) });
+    assert.equal(viaOk.kind, kind, `HTTP 200 ${code}`);
+    assert.equal(kindFromCode(code), kind);
+  }
+  // Kode terstruktur menang atas status HTTP.
+  const coded = await submitPortfolioFeedback(input, config, {
+    fetchImpl: async () => new Response(JSON.stringify(rpcError(-32000, { code: 'forbidden_scope', retryable: false })), { status: 401 }),
+  });
+  assert.equal(coded.kind, 'forbidden_scope');
+  assert.equal(coded.httpStatus, 401);
+  assert.equal(kindFromCode('tidak_dikenal'), null);
+});
+
+test('unauthorized dan forbidden_scope tidak pernah di-retry, bahkan bila retryable true', async () => {
+  const now = new Date('2026-01-01T00:00:00Z');
+  for (const kind of ['unauthorized', 'forbidden_scope']) {
+    assert.deepEqual(planAfterFailure({ kind, retryable: true }, 1, now, () => 0.5), { status: 'failed', nextAttemptAt: null }, kind);
+    const store = memoryStore([queued]);
+    const outcome = await deliverOne(store, 'a', async () => ({ ok: false, kind, retryable: true }), 'P');
+    assert.equal(outcome, 'failed');
+    assert.equal(store.data.get('a').attempts, 1);
+    assert.equal(store.data.get('a').nextAttemptAt, null);
+  }
+});
+
+test('retry hanya bila retryable = true (internal) atau jaringan/timeout', async () => {
+  const now = new Date('2026-01-01T00:00:00Z');
+  assert.equal(planAfterFailure({ kind: 'server', retryable: true }, 1, now, () => 0.5).status, 'queued');
+  assert.equal(planAfterFailure({ kind: 'server', retryable: false }, 1, now, () => 0.5).status, 'failed');
+  assert.equal(planAfterFailure({ kind: 'rate_limited', retryable: true }, 1, now, () => 0.5).status, 'queued');
+  assert.equal(planAfterFailure({ kind: 'network' }, 1, now, () => 0.5).status, 'queued');
+  assert.equal(planAfterFailure({ kind: 'timeout' }, 1, now, () => 0.5).status, 'queued');
+  assert.equal(planAfterFailure({ kind: 'protocol', retryable: true }, 1, now, () => 0.5).status, 'failed');
+  const internalNo = await submitPortfolioFeedback(input, config, { fetchImpl: reply(rpcError(-32603, { code: 'internal', retryable: false })) });
+  assert.equal(planAfterFailure(internalNo, 1, now).status, 'failed');
+  const internalYes = await submitPortfolioFeedback(input, config, { fetchImpl: reply(rpcError(-32603, { code: 'internal', retryable: true })) });
+  assert.equal(planAfterFailure(internalYes, 1, now).status, 'queued');
+});
+
+test('invalid_params (result isError) gagal permanen, tanpa retry, dengan alasan field', async () => {
+  const body = { jsonrpc: '2.0', id: '1', result: { isError: true, structuredContent: { code: 'invalid_params', issues: [{ field: 'name', message: 'terlalu pendek' }, { field: 'role', message: 'maksimal 80 karakter' }] } } };
+  const result = await submitPortfolioFeedback(input, config, { fetchImpl: reply(body) });
+  assert.equal(result.ok, false);
+  assert.equal(result.kind, 'invalid');
+  assert.equal(result.detail, 'name: terlalu pendek; role: maksimal 80 karakter');
+  assert.equal(planAfterFailure(result, 1, new Date()).status, 'failed');
+
+  const store = memoryStore([queued]);
+  const outcome = await deliverOne(store, 'a', async () => result, 'P');
+  assert.equal(outcome, 'failed');
+  const row = store.data.get('a');
+  assert.equal(row.attempts, 1);
+  assert.equal(row.nextAttemptAt, null);
+  assert.equal(row.lastError, 'invalid|name: terlalu pendek; role: maksimal 80 karakter');
+  assert.match(describeStoredFailure(row.lastError), /invalid_params.*name: terlalu pendek/);
+});
+
+test('Retry-After dari 429 terstruktur dihormati dan menunda percobaan berikutnya', async () => {
+  const result = await submitPortfolioFeedback(input, config, {
+    fetchImpl: async () => new Response(JSON.stringify(rpcError(-32029, { code: 'rate_limited', retryable: true })), { status: 429, headers: { 'retry-after': '900' } }),
+  });
+  assert.equal(result.kind, 'rate_limited');
+  assert.equal(result.retryAfterMs, 900_000);
+  const store = memoryStore([queued]);
+  const now = new Date('2026-01-01T00:00:00Z');
+  assert.equal(await deliverOne(store, 'a', async () => result, 'P', now, () => 0.5), 'queued');
+  assert.equal(store.data.get('a').nextAttemptAt.getTime(), now.getTime() + 900_000);
+});
+
+test('avatar_url hanya terkirim bila URL https publik yang valid', async () => {
+  const good = 'https://cdn.example.com/avatars/budi.webp';
+  assert.equal(validAvatarUrl(good), good);
+  assert.equal(validAvatarUrl(`  ${good}  `), good);
+  for (const bad of ['', '   ', null, undefined, 42, 'http://cdn.example.com/a.webp', 'https://user:pw@cdn.example.com/a.webp', 'https://user@cdn.example.com/a.webp', 'ftp://x.example.com/a', 'bukan url', `https://cdn.example.com/${'a'.repeat(500)}`]) {
+    assert.equal(validAvatarUrl(bad), null, String(bad));
+  }
+  assert.equal(validAvatarUrl(`https://cdn.example.com/${'a'.repeat(500 - 'https://cdn.example.com/'.length)}`)?.length, 500);
+
+  const sent = async (avatar_url) => {
+    let args;
+    await submitPortfolioFeedback({ ...input, avatar_url }, config, {
+      fetchImpl: async (_u, init) => { args = JSON.parse(init.body).params.arguments; return new Response(JSON.stringify(ok), { status: 200 }); },
+    });
+    return args;
+  };
+  assert.equal((await sent(good)).avatar_url, good);
+  for (const bad of ['', null, 'http://x.example.com/a.webp', 'https://u:p@x.example.com/a.webp']) {
+    assert.equal('avatar_url' in (await sent(bad)), false, String(bad));
+  }
+});
+
+test('toMcpInput: tanpa URL foto permanen, avatar_url tidak ikut terkirim', () => {
+  const row = { id: 'abc', name: 'Budi', role: null, message: 'Aplikasinya sangat membantu.', rating: 5, attempts: 1 };
+  const plain = toMcpInput(row, 'P');
+  assert.equal('avatar_url' in plain, false);
+  assert.equal(plain.idempotency_key, 'abc');
+  assert.equal(toMcpInput({ ...row, avatarUrl: null }, 'P').avatar_url, undefined);
+  assert.equal(toMcpInput({ ...row, avatarUrl: 'https://cdn.example.com/a.webp' }, 'P').avatar_url, 'https://cdn.example.com/a.webp');
+});
+
+test('simpan dan baca penyebab gagal: ringkasan dibersihkan dan dipotong', () => {
+  assert.equal(packFailure('timeout'), 'timeout');
+  assert.equal(packFailure('invalid', 'a|b\nc'), 'invalid|a b c');
+  assert.equal(packFailure('invalid', 'x'.repeat(500)).length, 'invalid|'.length + 200);
+  assert.deepEqual(unpackFailure('invalid|name: x'), { kind: 'invalid', detail: 'name: x' });
+  assert.deepEqual(unpackFailure('network'), { kind: 'network', detail: null });
+  assert.equal(unpackFailure(null), null);
+  assert.equal(describeStoredFailure(null), null);
+  assert.match(describeStoredFailure('forbidden_scope'), /feedback:write/);
+});
+
+test('tes koneksi: /health tanpa key lebih dulu, lalu tools/list dengan key', async () => {
+  assert.equal(healthUrl('https://alfizilham.vercel.app/api/mcp'), 'https://alfizilham.vercel.app/api/mcp/health');
+  assert.equal(healthUrl('https://alfizilham.vercel.app/api/mcp/?x=1'), 'https://alfizilham.vercel.app/api/mcp/health');
+
+  const calls = [];
+  const toolsOk = { jsonrpc: '2.0', id: '1', result: { tools: [{ name: 'submit_feedback', inputSchema: { properties: { name: {}, message: {}, rating: {}, role: {}, company: {}, project: {}, idempotency_key: {}, avatar_url: {} } } }] } };
+  const healthy = { ok: true, database: 'up', version: '1.4.0', tools: 1 };
+  const router = (health, tools) => async (url, init) => {
+    calls.push({ url, method: init.method, auth: init.headers.Authorization });
+    return init.method === 'GET' ? health(url) : tools();
+  };
+  const result = await testPortfolioConnection(config, {
+    fetchImpl: router(() => new Response(JSON.stringify(healthy), { status: 200 }), () => new Response(JSON.stringify(toolsOk), { status: 200 })),
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.health.version, '1.4.0');
+  assert.equal(result.toolFound, true);
+  assert.deepEqual(result.missingFields, []);
+  assert.equal(result.avatarField, 'avatar_url');
+  assert.equal(result.scopeMissing, false);
+  assert.deepEqual(calls.map((c) => c.method), ['GET', 'POST']);
+  assert.equal(calls[0].url, 'https://portfolio.example.com/api/mcp/health');
+  assert.equal(calls[0].auth, undefined);
+  assert.equal(calls[1].auth, `Bearer ${config.apiKey}`);
+});
+
+test('tes koneksi: masalah jaringan/DNS terdeteksi di /health dan key tidak dipakai', async () => {
+  const dns = Object.assign(new TypeError('fetch failed'), { cause: Object.assign(new Error('x'), { code: 'ENOTFOUND' }) });
+  let posted = 0;
+  const result = await testPortfolioConnection(config, {
+    fetchImpl: async (_u, init) => { if (init.method === 'POST') posted += 1; throw dns; },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.stage, 'health');
+  assert.equal(result.kind, 'dns');
+  assert.equal(posted, 0);
+
+  const down = await testPortfolioConnection(config, { fetchImpl: async () => new Response('', { status: 503 }) });
+  assert.equal(down.stage, 'health');
+  assert.equal(down.kind, 'server');
+  const sick = await testPortfolioConnection(config, { fetchImpl: reply({ ok: false, database: 'down' }) });
+  assert.equal(sick.stage, 'health');
+  assert.equal(sick.kind, 'server');
+});
+
+test('tes koneksi: key ditolak dibedakan dari jaringan; tools/list kosong = scope hilang', async () => {
+  const healthy = new Response(JSON.stringify({ ok: true, database: 'up', version: '1', tools: 1 }), { status: 200 });
+  const denied = await testPortfolioConnection(config, {
+    fetchImpl: async (_u, init) => (init.method === 'GET' ? healthy.clone() : new Response(JSON.stringify(rpcError(-32001, { code: 'unauthorized', retryable: false })), { status: 401 })),
+  });
+  assert.equal(denied.ok, false);
+  assert.equal(denied.stage, 'tools');
+  assert.equal(denied.kind, 'unauthorized');
+
+  const empty = await testPortfolioConnection(config, {
+    fetchImpl: async (_u, init) => (init.method === 'GET' ? healthy.clone() : new Response(JSON.stringify({ jsonrpc: '2.0', id: '1', result: { tools: [] } }), { status: 200 })),
+  });
+  assert.equal(empty.ok, true);
+  assert.equal(empty.scopeMissing, true);
+  assert.equal(empty.toolFound, false);
+
+  const noHealthEndpoint = await testPortfolioConnection(config, {
+    fetchImpl: async (_u, init) => (init.method === 'GET' ? new Response('', { status: 404 }) : new Response(JSON.stringify({ jsonrpc: '2.0', id: '1', result: { tools: [{ name: 'submit_feedback', inputSchema: { properties: {} } }] } }), { status: 200 })),
+  });
+  assert.equal(noHealthEndpoint.ok, true);
+  assert.equal(noHealthEndpoint.health, null);
 });
