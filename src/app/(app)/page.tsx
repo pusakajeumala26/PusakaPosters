@@ -4,8 +4,16 @@ import { getStats, listMembers } from '@/lib/members';
 import { getSettings } from '@/lib/settings';
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ upload?: string }> }) {
-  const [settings, admin, params] = await Promise.all([getSettings(), isAdmin(), searchParams]);
-  const [members, stats] = await Promise.all([listMembers(admin), getStats(settings)]);
+  // Mulai semua query sekaligus: daftar anggota hanya butuh status admin, statistik hanya butuh pengaturan.
+  const adminPromise = isAdmin();
+  const settingsPromise = getSettings();
+  const [settings, admin, params, members, stats] = await Promise.all([
+    settingsPromise,
+    adminPromise,
+    searchParams,
+    adminPromise.then((isAdminUser) => listMembers(isAdminUser)),
+    settingsPromise.then((s) => getStats(s)),
+  ]);
   return (
     <HomeView
       members={members}
