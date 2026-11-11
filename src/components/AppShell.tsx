@@ -19,7 +19,9 @@ import {
   IconHome,
   IconLock,
   IconLogout,
+  IconMcp,
   IconMenu,
+  IconShieldLock,
   IconSliders,
 } from './icons';
 import { useToast } from './ToastProvider';
@@ -34,8 +36,8 @@ const ADMIN_NAV: NavItem[] = [
 ];
 
 const SUPER_NAV: NavItem[] = [
-  { href: '/super-admin/mcp', label: 'MCP Server', Icon: IconSliders },
-  { href: '/super-admin/security', label: 'Security', Icon: IconLock },
+  { href: '/super-admin/mcp', label: 'MCP Server', Icon: IconMcp },
+  { href: '/super-admin/security', label: 'Security', Icon: IconShieldLock },
 ];
 
 const PAGE_META: Record<string, { title: string; sub?: string }> = {
