@@ -60,12 +60,11 @@ npm run dev
 | `SUPABASE_BUCKET` | Ya | Nama bucket foto anggota, biasanya `member-photos`. |
 | `ADMIN_PASSWORD` | Setup awal | Password admin awal sebelum diganti dari Pengaturan. |
 | `SESSION_SECRET` | Ya | Kunci penanda tangan cookie admin. |
-| `PORTFOLIO_MCP_URL` | Opsional | Endpoint MCP portfolio untuk form `/masukan`. |
-| `PORTFOLIO_MCP_API_KEY` | Opsional | API key MCP portfolio; hanya server, jangan diberi awalan `NEXT_PUBLIC_`. |
+| `CRON_SECRET` | Opsional | Rahasia untuk Vercel Cron `/api/cron/feedback`. URL dan API key MCP portfolio diatur admin lewat Pengaturan (terenkripsi di database), bukan lewat env. |
 | `NEXT_PUBLIC_SEGMENTER_RUNTIME` | Opsional | Pilih runtime segmentasi `mediapipe` (default) atau `tfjs`. |
 | `NEXT_PUBLIC_SEGMENTER_MODEL_URL` | Opsional | URL model khusus runtime TF.js. |
 
-Atur dua variabel portfolio pada deployment agar form masukan dapat mengirim testimoni. Detail alur dan pengelolaan key ada di [docs/feedback.md](docs/feedback.md).
+URL dan API key MCP portfolio diatur admin lewat halaman Pengaturan (disimpan terenkripsi di database), bukan lewat env. Detail alur, antrean, dan rotasi key ada di [docs/feedback.md](docs/feedback.md).
 
 ## Deploy (Vercel)
 
