@@ -59,6 +59,13 @@ export async function uploadPng(path: string, data: Buffer) {
   if (error) throw new Error(`Upload ke storage gagal: ${error.message}`);
 }
 
+/** Unduh satu objek dari bucket (dipakai untuk membuat thumbnail di server). */
+export async function downloadObject(path: string): Promise<Buffer> {
+  const { data, error } = await storage().from(BUCKET).download(path);
+  if (error || !data) throw new Error(`Gagal mengunduh dari storage: ${error?.message ?? 'tanpa data'}`);
+  return Buffer.from(await data.arrayBuffer());
+}
+
 export async function removePaths(paths: string[]) {
   if (!paths.length) return;
   await storage().from(BUCKET).remove(paths);

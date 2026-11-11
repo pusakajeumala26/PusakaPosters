@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { formatWhen, initials } from '@/lib/format';
+import { thumbSrc } from '@/lib/thumb';
 import type { MemberView } from '@/lib/types';
 import { downloadPhotosZip } from '@/lib/zip-client';
 import { IconCheck, IconDownload } from './icons';
@@ -75,9 +76,9 @@ export function GalleryView({ members }: { members: MemberView[] }) {
           return (
             <button key={m.id} type="button" className={on ? 'tile on' : 'tile'} aria-pressed={on} onClick={() => toggle(m.id)}>
               <span className={m.hasCutout ? 'ph checker' : 'ph'} aria-hidden="true">
-                {m.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- signed URL dinamis dari Supabase
-                  <img className="image-pending" src={m.photoUrl} alt="" loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.replace('image-pending', 'image-loaded')} />
+                {m.thumbUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- thumbnail dari route kita sendiri
+                  <img className="image-pending" src={thumbSrc(m.thumbUrl, 480) ?? undefined} alt="" loading="lazy" decoding="async" onLoad={(e) => e.currentTarget.classList.replace('image-pending', 'image-loaded')} />
                 ) : (
                   initials(m.name)
                 )}
