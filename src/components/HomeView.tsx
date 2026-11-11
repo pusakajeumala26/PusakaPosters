@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { formatWhen } from '@/lib/format';
+import { thumbSrc } from '@/lib/thumb';
 import { GENDER_LABELS, type EditableMember, type Gender, type MemberView, type Stats } from '@/lib/types';
 import { Avatar } from './Avatar';
 import { IconChevronRight, IconSearch, IconSort, IconUpload } from './icons';
@@ -151,7 +152,7 @@ export function HomeView({ members, stats, admin, uploadOpen, autoUpload }: Prop
         <div className={refreshing ? 'list is-pending' : 'list'} aria-busy={refreshing}>
           {items.map((m) => (
             <button key={m.id} type="button" className="mcard" aria-label={`${m.name}, lihat detail`} onClick={() => setDetailId(m.id)}>
-              <Avatar name={m.name} src={m.photoUrl} />
+              <Avatar name={m.name} src={thumbSrc(m.thumbUrl, 160)} />
               <span className="mtxt">
                 <b>{m.name}</b>
                 {m.quote && <span>{m.quote}</span>}
