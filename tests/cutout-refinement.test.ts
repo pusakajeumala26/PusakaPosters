@@ -97,6 +97,48 @@ for (const backdrop of ['blue', 'red'] as const) {
   });
 }
 
+test('keeps teal jacket color inside the edge band on a blue backdrop', () => {
+  const width = 256;
+  const height = 192;
+  const maskWidth = 64;
+  const maskHeight = 48;
+  const jacket = [20, 130, 110];
+  const backdrop = [0, 0, 255];
+  const left = 40;
+  const right = 216;
+  const top = 30;
+  const alphaAt = (x: number, y: number) => {
+    const edge = Math.min(x + 0.5 - left, right - x - 0.5, y + 0.5 - top);
+    return smoothstep(-0.75, 0.75, edge);
+  };
+  const imageData = new Uint8ClampedArray(width * height * 4);
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+    const a = alphaAt(x, y);
+    const index = (y * width + x) * 4;
+    for (let c = 0; c < 3; c++) imageData[index + c] = Math.round(jacket[c] * a + backdrop[c] * (1 - a));
+    imageData[index + 3] = 255;
+  }
+  const maskData = new Uint8ClampedArray(maskWidth * maskHeight * 4);
+  for (let y = 0; y < maskHeight; y++) for (let x = 0; x < maskWidth; x++) {
+    const edge = Math.min((x + 0.5) * 4 - left, right - (x + 0.5) * 4, (y + 0.5) * 4 - top);
+    const value = Math.round(smoothstep(-5, 5, edge) * 255);
+    const index = (y * maskWidth + x) * 4;
+    maskData[index] = maskData[index + 1] = maskData[index + 2] = value;
+    maskData[index + 3] = 255;
+  }
+  const refined = refinePersonMask(new ImageData(imageData, width, height), new ImageData(maskData, maskWidth, maskHeight));
+  let checked = 0;
+  for (let y = top + 4; y < top + 14; y++) for (let x = left + 14; x < right - 14; x++) {
+    const index = (y * width + x) * 4;
+    checked++;
+    assert.ok(refined.data[index + 3] >= 250, `edge-band pixel (${x},${y}) must stay opaque`);
+    for (let c = 0; c < 3; c++) {
+      assert.ok(Math.abs(refined.data[index + c] - jacket[c]) <= 6, `edge-band pixel (${x},${y}) channel ${c} must keep the jacket color`);
+    }
+  }
+  assert.ok(checked > 1000);
+});
+
 test('bilinear mask upscale preserves intermediate probabilities', () => {
   const data = new Uint8ClampedArray([
     0, 0, 0, 255, 255, 255, 255, 255,

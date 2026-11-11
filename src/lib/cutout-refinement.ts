@@ -11,6 +11,11 @@ export type RefinementOptions = {
 };
 
 const clamp = (value: number, low = 0, high = 1) => Math.max(low, Math.min(high, value));
+/** Extra room above the nearest subject color before the backdrop channel is treated as spill. */
+const FOREGROUND_HEADROOM = 12;
+/** Pixels above both thresholds are treated as solid subject, so edge unmixing cannot tint them. */
+const SOLID_MODEL_ALPHA = 0.9;
+const SOLID_PROJECTED = 0.8;
 const pixel = (x: number, y: number, width: number) => y * width + x;
 
 function confidenceChannel(mask: ImageData) {
@@ -251,6 +256,9 @@ export function refinePersonMask(source: ImageData, softMask: ImageData, options
     else if (edgeBand[i] && modelAlpha > 0.6 && projected < 0.04) alpha[i] = 0;
     else if (edgeBand[i]) alpha[i] = clamp(projected * 0.9 + modelAlpha * 0.1 - choke);
     else alpha[i] = clamp(projected * 0.78 + modelAlpha * 0.22 - choke);
+    // A pixel the model trusts and that is clearly subject-colored is not a blend: leave it untouched.
+    const solid = !noisyBackground && modelAlpha > SOLID_MODEL_ALPHA && projected > SOLID_PROJECTED;
+    if (solid) alpha[i] = 1;
 
     const a = alpha[i];
     const recovered = a < 0.12
@@ -261,7 +269,13 @@ export function refinePersonMask(source: ImageData, softMask: ImageData, options
     const otherAverage = (recovered[(dominant + 1) % 3] + recovered[(dominant + 2) % 3]) / 2;
     const otherBackgroundAverage = (bg[(dominant + 1) % 3] + bg[(dominant + 2) % 3]) / 2;
     const dominantIsBackdrop = bg[dominant] > otherBackgroundAverage + 20;
-    if (dominantIsBackdrop && a < 0.999) recovered[dominant] = Math.min(recovered[dominant], otherAverage + despillTolerance);
+    if (dominantIsBackdrop && solid) {
+      // Solid subject pixels only lose stray backdrop tint; never below the subject's own color (teal keeps its blue).
+      const ceiling = Math.max(otherAverage + despillTolerance, foreground.color[dominant] + FOREGROUND_HEADROOM);
+      recovered[dominant] = Math.min(recovered[dominant], ceiling);
+    } else if (dominantIsBackdrop && a < 0.999) {
+      recovered[dominant] = Math.min(recovered[dominant], otherAverage + despillTolerance);
+    }
     result.data[at] = Math.round(clamp(recovered[0] / 255, 0, 1) * 255);
     result.data[at + 1] = Math.round(clamp(recovered[1] / 255, 0, 1) * 255);
     result.data[at + 2] = Math.round(clamp(recovered[2] / 255, 0, 1) * 255);
