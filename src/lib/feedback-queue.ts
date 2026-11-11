@@ -1,5 +1,6 @@
 import { clampRoleForMcp } from './feedback-input';
 import {
+  packFailure,
   planAfterFailure,
   type DeliveryResult,
   type FeedbackInput,
@@ -23,7 +24,11 @@ export type QueueRow = {
   rating: number;
   /** Sudah termasuk percobaan yang sedang berjalan. */
   attempts: number;
-  uncertain: boolean;
+  /**
+   * URL https publik PERMANEN foto profil, bila ada. Saat ini tidak ada: foto disimpan di bucket privat
+   * (tanpa URL permanen), sehingga avatar_url tidak dikirim dan portfolio menampilkan inisial.
+   */
+  avatarUrl?: string | null;
 };
 
 export type QueueUpdate = {
@@ -31,7 +36,6 @@ export type QueueUpdate = {
   lastError: string | null;
   lastAttemptAt: Date;
   nextAttemptAt: Date | null;
-  uncertain: boolean;
   remoteId?: string;
   sentAt?: Date;
 };
@@ -50,6 +54,9 @@ export const toMcpInput = (row: QueueRow, project: string): FeedbackInput => ({
   rating: row.rating,
   ...(row.role ? { role: clampRoleForMcp(row.role) } : {}),
   project,
+  // Id feedback lokal sebagai kunci idempotensi: kirim ulang dengan key yang sama aman (duplicate: true = berhasil).
+  idempotency_key: row.id,
+  ...(row.avatarUrl ? { avatar_url: row.avatarUrl } : {}),
 });
 
 export async function deliverOne(
@@ -67,7 +74,7 @@ export async function deliverOne(
   try {
     result = await send(toMcpInput(row, project));
   } catch {
-    result = { ok: false, kind: 'network', uncertain: true };
+    result = { ok: false, kind: 'network' };
   }
 
   if (result.ok) {
@@ -76,7 +83,6 @@ export async function deliverOne(
       lastError: null,
       lastAttemptAt: now,
       nextAttemptAt: null,
-      uncertain: row.uncertain,
       remoteId: result.remoteId,
       sentAt: now,
     });
@@ -86,10 +92,9 @@ export async function deliverOne(
   const plan = planAfterFailure(result, row.attempts, now, rand);
   await store.finish(id, {
     syncStatus: plan.status === 'queued' ? 'QUEUED' : 'FAILED',
-    lastError: result.kind,
+    lastError: packFailure(result.kind, result.detail),
     lastAttemptAt: now,
     nextAttemptAt: plan.nextAttemptAt,
-    uncertain: row.uncertain || result.uncertain,
   });
   return plan.status === 'queued' ? 'queued' : 'failed';
 }
