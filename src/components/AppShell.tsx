@@ -52,7 +52,6 @@ const PAGE_META: Record<string, { title: string; sub?: string }> = {
 };
 
 const DESKTOP = '(min-width: 1024px)';
-const FEEDBACK_AUTO_OPEN_MS = 3000;
 
 function useIsDesktop() {
   return useSyncExternalStore(
@@ -75,23 +74,11 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
   const [open, setOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const autoPrompted = useRef(false);
   const [iosHelpOpen, setIosHelpOpen] = useState(false);
   const meta = PAGE_META[pathname] ?? PAGE_META['/'];
   const sub = pathname === '/' ? `Leting ${letingName}` : meta.sub;
 
   useEffect(() => setOpen(false), [pathname]);
-
-  // Modal feedback terbuka sendiri ~3 detik setelah beranda dimuat (sekali per pemuatan halaman; admin tidak diganggu).
-  useEffect(() => {
-    if (pathname !== '/' || admin || autoPrompted.current) return;
-    const timer = window.setTimeout(() => {
-      if (autoPrompted.current || document.querySelector('.ov')) return;
-      autoPrompted.current = true;
-      setFeedbackOpen(true);
-    }, FEEDBACK_AUTO_OPEN_MS);
-    return () => window.clearTimeout(timer);
-  }, [pathname, admin]);
 
   const drawerOpen = open && !desktop;
   const contactsPresence = usePresence(contactsOpen, 340);
