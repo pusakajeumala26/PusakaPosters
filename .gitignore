@@ -33,3 +33,6 @@ graphify-out/
 
 # Documentations
 docs/reports/
+
+.vercel
+.env*

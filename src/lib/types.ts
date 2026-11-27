@@ -51,7 +51,7 @@ export type SettingsView = {
   uploadOpen: boolean;
 };
 
-/** Data yang boleh diedit anggota setelah verifikasi password. */
+/** Data profil anggota yang dapat diubah setelah login. */
 export type EditableMember = {
   name: string;
   countryCode: string;

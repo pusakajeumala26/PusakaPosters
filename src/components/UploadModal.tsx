@@ -312,7 +312,7 @@ export function UploadModal({ open, presence, editing, admin, uploadOpen, onClos
                     className="inp"
                     type={showPw ? 'text' : 'password'}
                     autoComplete="new-password"
-                    placeholder="Minimal 4 karakter"
+                    placeholder="Minimal 8 karakter"
                     value={f.pw}
                     onChange={(e) => set('pw', e.target.value)}
                     aria-invalid={inv('pw')}

@@ -65,7 +65,7 @@ function useIsDesktop() {
   );
 }
 
-export function AppShell({ letingName, admin, superAdmin, children }: { letingName: string; admin: boolean; superAdmin: boolean; children: ReactNode }) {
+export function AppShell({ letingName, admin, superAdmin, member, children }: { letingName: string; admin: boolean; superAdmin: boolean; member: { name: string } | null; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const toast = useToast();
@@ -75,8 +75,8 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
   const [contactsOpen, setContactsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [iosHelpOpen, setIosHelpOpen] = useState(false);
-  const meta = PAGE_META[pathname] ?? PAGE_META['/'];
-  const sub = pathname === '/' ? `Leting ${letingName}` : meta.sub;
+  const meta = pathname === '/' && member && !admin ? { title: 'Profil saya', sub: 'Ruang anggota Pusaka Jeumala' } : PAGE_META[pathname] ?? PAGE_META['/'];
+  const sub = pathname === '/' && !member && !admin ? 'Masuk atau buat akun anggota' : pathname === '/' && !member ? `Leting ${letingName}` : meta.sub;
 
   useEffect(() => setOpen(false), [pathname]);
 
@@ -111,6 +111,18 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
     router.refresh();
   }
 
+  async function memberLogout() {
+    try {
+      const response = await fetch('/api/member-auth/logout', { method: 'POST' });
+      if (!response.ok) throw new Error('Sesi belum bisa ditutup. Coba lagi saat koneksi stabil.');
+      router.replace('/');
+      router.refresh();
+      toast('Kamu sudah keluar dari akun');
+    } catch (cause) {
+      toast(cause instanceof Error ? cause.message : 'Tidak dapat keluar dari akun.', 'error');
+    }
+  }
+
   async function onInstall() {
     if (iosSafari && !canPrompt) {
       setIosHelpOpen(true);
@@ -123,7 +135,7 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
   const current = (href: string) => (pathname === href ? 'page' : undefined);
 
   return (
-    <div className="shell">
+    <div className={member && !admin ? 'shell member-shell' : 'shell'}>
       <a className="skip" href="#main">
         Lewati ke konten
       </a>
@@ -143,7 +155,7 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
           <Image className="mono" src="/brand/logo-mark-light.webp" alt="" width={44} height={44} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <b>PusakaPosters</b>
-            <span>Leting {letingName}</span>
+            <span>{member && !admin ? `Halo, ${member.name.split(' ')[0]}` : `Leting ${letingName}`}</span>
           </div>
           <button type="button" className="icon-btn side-close" aria-label="Tutup menu" onClick={() => setOpen(false)}>
             <IconClose />
@@ -154,7 +166,7 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
           <div className="nav-cap">Umum</div>
           <Link href="/" className={navClass('/')} aria-current={current('/')}>
             <IconHome />
-            Beranda
+            {member && !admin ? 'Profil Saya' : 'Beranda'}
           </Link>
           <button type="button" className="nav nav-btn" onClick={() => { setOpen(false); setFeedbackOpen(true); }}>
             <IconChat />
@@ -162,7 +174,7 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
           </button>
         </nav>
 
-        <nav className="nav-group" aria-label="Admin">
+        {(admin || !member) && <nav className="nav-group" aria-label="Admin">
           <div className="nav-cap">Admin</div>
           {ADMIN_NAV.map(({ href, label, Icon }) => (
             <Link key={href} href={href} className={navClass(href)} aria-current={current(href)}>
@@ -175,9 +187,9 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
               )}
             </Link>
           ))}
-        </nav>
+        </nav>}
 
-        <nav className="nav-group" aria-label="Super Admin">
+        {(superAdmin || !member) && <nav className="nav-group" aria-label="Super Admin">
           <div className="nav-cap">Super Admin</div>
           {SUPER_NAV.map(({ href, label, Icon }) => (
             <Link key={href} href={href} className={navClass(href)} aria-current={current(href)}>
@@ -190,7 +202,7 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
               )}
             </Link>
           ))}
-        </nav>
+        </nav>}
 
         <div className="side-foot">
           {canInstall && !installed && <button type="button" className="btn ghost block" onClick={onInstall}>
@@ -207,6 +219,11 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
                 <IconLogout size={18} />
                 Keluar admin
               </button>
+            </>
+          ) : member ? (
+            <>
+              <div className="adm"><span className="dot" aria-hidden="true" />Akun anggota aktif</div>
+              <button type="button" className="btn ghost block" onClick={memberLogout}><IconLogout size={18} />Keluar dari akun</button>
             </>
           ) : (
             <Link href="/status" className="btn ghost block">
@@ -258,6 +275,11 @@ export function AppShell({ letingName, admin, superAdmin, children }: { letingNa
           {children}
         </main>
       </div>
+      {member && !admin && <nav className="member-bottom-nav" aria-label="Navigasi anggota">
+        <Link href="/" aria-current={current('/')}><IconHome /><span>Profil</span></Link>
+        <button type="button" onClick={() => setFeedbackOpen(true)}><IconChat /><span>Feedback</span></button>
+        <button type="button" onClick={memberLogout}><IconLogout /><span>Keluar</span></button>
+      </nav>}
       {contactsPresence.present && <div className="ov contact-overlay" data-state={contactsPresence.phase} aria-hidden={!contactsOpen} inert={!contactsOpen}>
         <button type="button" className="scrim" aria-label="Tutup kontak pengurus" tabIndex={-1} onClick={() => setContactsOpen(false)} />
         <section ref={contactsRef} className="contact-dialog" role="dialog" aria-modal="true" aria-labelledby="contacts-title" tabIndex={-1}>

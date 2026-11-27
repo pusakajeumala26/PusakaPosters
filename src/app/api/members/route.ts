@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword, requireAdmin } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { assertSameOrigin, clientIp, formString, HttpError, json, rateLimit, route } from '@/lib/http';
 import { normalizeToPng, normalizeToWebp } from '@/lib/image-server';
@@ -8,9 +8,16 @@ import { loadSettings } from '@/lib/settings';
 import { slugify } from '@/lib/slug';
 import { removePaths, uploadPng, uploadWebp } from '@/lib/supabase';
 import { newMemberPassword } from '@/lib/validation';
+import { listMembers } from '@/lib/members';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
+
+/** The complete member directory is restricted to admins. */
+export const GET = route(async () => {
+  await requireAdmin();
+  return Response.json({ members: await listMembers() }, { headers: { 'Cache-Control': 'private, no-store, max-age=0', Vary: 'Cookie' } });
+});
 
 /**
  * Anggota upload data baru.
@@ -20,6 +27,7 @@ export const maxDuration = 30;
  */
 export const POST = route(async (req: Request) => {
   assertSameOrigin(req);
+  await requireAdmin();
   rateLimit(`upload:${clientIp(req)}`, 10, 10 * 60_000);
 
   const settings = await loadSettings();

@@ -20,8 +20,8 @@ function ensureBucket(): Promise<void> {
     const { data } = await s.getBucket(BUCKET);
     if (data) {
       const allowed = data.allowed_mime_types ?? ['image/webp'];
-      if (!allowed.includes('image/png')) {
-        const { error } = await s.updateBucket(BUCKET, { public: data.public, allowedMimeTypes: [...allowed, 'image/png'] });
+      if (data.public || !allowed.includes('image/png')) {
+        const { error } = await s.updateBucket(BUCKET, { public: false, allowedMimeTypes: [...allowed, 'image/png'] });
         if (error) throw new Error(`Bucket gagal diperbarui: ${error.message}`);
       }
       return;
@@ -61,6 +61,7 @@ export async function uploadPng(path: string, data: Buffer) {
 
 /** Unduh satu objek dari bucket (dipakai untuk membuat thumbnail di server). */
 export async function downloadObject(path: string): Promise<Buffer> {
+  await ensureBucket();
   const { data, error } = await storage().from(BUCKET).download(path);
   if (error || !data) throw new Error(`Gagal mengunduh dari storage: ${error?.message ?? 'tanpa data'}`);
   return Buffer.from(await data.arrayBuffer());
@@ -74,6 +75,7 @@ export async function removePaths(paths: string[]) {
 /** path -> URL bertanda tangan. Path yang gagal ditandatangani dilewati. */
 export async function signedUrls(paths: string[], expiresIn = 3600): Promise<Record<string, string>> {
   if (!paths.length) return {};
+  await ensureBucket();
   const { data, error } = await storage().from(BUCKET).createSignedUrls(paths, expiresIn);
   if (error || !data) throw new Error(`Gagal membuat signed URL: ${error?.message ?? 'tanpa data'}`);
   const out: Record<string, string> = {};

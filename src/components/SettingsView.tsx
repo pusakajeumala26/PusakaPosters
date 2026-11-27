@@ -6,6 +6,7 @@ import type { MemberView, SettingsView as SettingsData } from '@/lib/types';
 import { downloadPhotosZip } from '@/lib/zip-client';
 import { DatePicker } from './DatePicker';
 import { useToast } from './ToastProvider';
+import { EnrollmentInviteCard } from './EnrollmentInviteCard';
 
 async function patch(url: string, body: unknown, method = 'PATCH') {
   const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -69,6 +70,7 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
 
   return (
     <div className={refreshing ? 'sets is-pending' : 'sets'} aria-busy={refreshing}>
+      <EnrollmentInviteCard />
       <form className="card" onSubmit={saveGeneral}>
         <h3>Leting</h3>
         <p>Dipakai di topbar dan tracking card.</p>
@@ -111,7 +113,7 @@ export function SettingsView({ settings, members }: { settings: SettingsData; me
 
       <section className="card">
         <h3>Upload</h3>
-        <p>Atur kapan anggota boleh mengirim data.</p>
+        <p>Atur kapan anggota baru boleh mendaftar dan mengirim foto.</p>
         <div className="switch-row">
           <div>
             <b id="open-l">Terima upload baru</b>

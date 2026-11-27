@@ -21,10 +21,10 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: 'Upload data',
-        short_name: 'Upload',
-        description: 'Langsung buka form upload',
-        url: '/?upload=1',
+        name: 'Profil anggota',
+        short_name: 'Profil',
+        description: 'Buka profil pribadi anggota',
+        url: '/',
         icons: [{ src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
       },
     ],

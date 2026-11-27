@@ -36,11 +36,43 @@ const nextConfig = {
         ],
       },
       {
+        source: '/',
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
+      },
+      {
+        source: '/galeri',
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
+      },
+      {
+        source: '/status',
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
+      },
+      {
+        source: '/pengaturan',
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
+      },
+      {
+        source: '/feedback',
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
+      },
+      {
+        source: '/super-admin/:path*',
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
+      },
+      {
         source: '/sw.js',
         headers: [
           { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
           { key: 'Service-Worker-Allowed', value: '/' },
         ],
+      },
+      {
+        source: '/api/private/:path*',
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
+      },
+      {
+        source: '/api/members/:id/thumb',
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
       },
       {
         source: '/mediapipe/:path*',

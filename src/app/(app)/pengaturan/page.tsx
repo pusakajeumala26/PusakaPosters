@@ -9,6 +9,6 @@ export const metadata: Metadata = { title: 'Pengaturan' };
 
 export default async function SettingsPage() {
   if (!(await isAdmin())) return <AdminGate pageName="Pengaturan" />;
-  const [settings, members] = await Promise.all([getSettings(), listMembers(true)]);
+  const [settings, members] = await Promise.all([getSettings(), listMembers()]);
   return <SettingsView settings={toSettingsView(settings)} members={members} />;
 }

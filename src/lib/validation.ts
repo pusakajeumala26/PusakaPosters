@@ -24,12 +24,12 @@ export const memberFields = z.object({
 
 export const newMemberPassword = z
   .string()
-  .min(4, 'Buat password minimal 4 karakter.')
+  .min(8, 'Buat password minimal 8 karakter.')
   .max(72, 'Password maksimal 72 karakter.');
 
 export const editMemberPassword = z
   .string()
-  .min(4, 'Password baru minimal 4 karakter.')
+  .min(8, 'Password baru minimal 8 karakter.')
   .max(72, 'Password maksimal 72 karakter.');
 
 export const adminPassword = z
