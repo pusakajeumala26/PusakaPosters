@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Prisma, type Setting } from '@prisma/client';
+import { Prisma, type Setting } from '../src/generated/prisma/client';
 import { findOrCreateSetting } from '../src/lib/settings-loader';
 
 const row = { id: 1, letingName: 'Pusaka Jeumala' } as Setting;

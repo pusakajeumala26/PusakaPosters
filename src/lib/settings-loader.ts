@@ -1,4 +1,4 @@
-import { Prisma, type Setting } from '@prisma/client';
+import { Prisma, type Setting } from '@/generated/prisma/client';
 
 export type SettingsSource = {
   find: () => Promise<Setting | null>;
