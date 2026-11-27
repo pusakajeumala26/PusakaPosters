@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  Next.js 15 &middot; Prisma + NeonDB &middot; Supabase Storage &middot; TensorFlow.js
+  Next.js 16 &middot; Prisma ORM 7 + NeonDB &middot; Supabase Storage &middot; TensorFlow.js
 </p>
 
 ---
@@ -36,6 +36,8 @@ Jika penghapusan background gagal (mis. tidak ada orang terdeteksi), foto asli t
 
 ## Setup
 
+Gunakan Node.js 20.19.0 atau lebih baru (disarankan Node 22), sesuai persyaratan Prisma 7.
+
 1. **Neon**: buat project, salin connection string *pooled* ke `DATABASE_URL` dan yang *direct* ke `DIRECT_URL`.
 2. **Supabase**: buat project, salin `Project URL` ke `SUPABASE_URL` dan `service_role key` ke `SUPABASE_SERVICE_ROLE_KEY` (rahasia, hanya server). Bucket `member-photos` (private) dibuat otomatis saat upload pertama.
 3. Salin `.env.example` menjadi `.env`, lalu isi. Buat `SESSION_SECRET` dengan `openssl rand -base64 48`, dan isi `ADMIN_PASSWORD` (password admin awal; bisa diganti di Pengaturan).
@@ -46,8 +48,6 @@ npm install            # juga menjalankan prisma generate + menyalin model Media
 npx prisma migrate deploy
 npm run dev
 ```
-
-5. **Commit `package-lock.json`** setelah `npm install` pertama supaya versi terkunci.
 
 ## Variabel lingkungan
 
@@ -91,7 +91,7 @@ Nama anggota baru otomatis disimpan dalam Title Case. Untuk merapikan data yang 
 
 ## Catatan penting
 
-Kode ini ditulis tanpa bisa menjalankan `npm install`/`next build` (registry diblokir di lingkungan penulisan), jadi **belum diuji end-to-end**. Periksa lebih dulu:
+Prisma 7 memakai adapter PostgreSQL @prisma/adapter-pg. DATABASE_URL dipakai adapter saat runtime, sedangkan DIRECT_URL dibaca oleh prisma.config.ts untuk migrasi. Client dihasilkan ke src/generated/prisma saat install/build dan tidak perlu dikomit.
 
 - `npm run typecheck` dan `npm run build` bersih.
 - Hasil hapus background pada beberapa foto di browser nyata (mask MediaPipe -> alpha).

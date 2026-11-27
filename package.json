@@ -4,7 +4,7 @@
   "private": true,
   "description": "PusakaPosters - dashboard PWA untuk mendata anggota leting Pusaka Jeumala",
   "engines": {
-    "node": ">=20.9"
+    "node": ">=20.19.0"
   },
   "scripts": {
     "dev": "next dev",
@@ -34,7 +34,9 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sharp": "^0.35.5",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "@prisma/adapter-pg": "7.10.1",
+    "dotenv": "^16.6.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
@@ -42,9 +44,10 @@
     "@types/react-dom": "^19.1.0",
     "eslint": "^10.15.0",
     "eslint-config-next": "^16.4.6",
-    "prisma": "6.19.3",
+    "prisma": "7.10.1",
     "tsx": "^4.20.6",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "@types/pg": "^8.15.5"
   },
   "overrides": {
     "postcss": "8.5.23",

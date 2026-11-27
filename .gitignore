@@ -1,5 +1,6 @@
 node_modules
 .next
+/src/generated/prisma
 out
 .env
 .env.local

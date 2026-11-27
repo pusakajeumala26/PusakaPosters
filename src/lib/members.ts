@@ -1,4 +1,4 @@
-import type { Member, Setting } from '@prisma/client';
+import type { Member, Setting } from '@/generated/prisma/client';
 import { APP_TZ, APP_TZ_OFFSET_MS } from './constants';
 import { db } from './db';
 import { fmtPhone, maskPhone } from './format';
