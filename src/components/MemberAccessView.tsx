@@ -16,7 +16,7 @@ type Mode = 'login' | 'register' | 'help';
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return <div className={compact ? 'member-brand compact' : 'member-brand'}>
-    <Image src="/brand/logo-mark-light.webp" alt="" width={42} height={42} priority />
+    <Image src="/brand/pusaka-jeumala.webp" alt="" width={42} height={42} priority />
     <span><b>PusakaPosters</b><small>Leting Pusaka Jeumala</small></span>
   </div>;
 }

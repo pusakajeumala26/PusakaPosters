@@ -3,12 +3,12 @@
  * - Aset statis (/_next/static, /mediapipe, /icons): cache dulu.
  * - Tidak pernah men-cache /api, halaman admin, atau foto (signed URL Supabase kedaluwarsa
  *   dan berisi data pribadi), supaya tidak ada data anggota tersisa di perangkat bersama.
- * Naikkan VERSION saat file di /public/mediapipe berubah. */
-const VERSION = 'pp-v1';
+ * Naikkan VERSION saat aset shell yang di-cache berubah. */
+const VERSION = 'pp-v2';
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const OFFLINE_URL = '/offline';
-const PRECACHE = [OFFLINE_URL, '/icons/icon-192.png', '/icons/icon-512.png', '/brand/logo-mark-light.webp'];
+const PRECACHE = [OFFLINE_URL, '/icons/icon-192.png', '/icons/icon-512.png', '/brand/pusaka-jeumala.webp'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

@@ -22,7 +22,7 @@ export function MemberProfileView({ member, autoEdit = false }: { member: Member
 
   return <>
     <section className="member-profile" aria-labelledby="profile-title">
-      <div className="profile-brand"><Image src="/brand/logo-mark-light.webp" alt="" width={36} height={36} /><span><b>PusakaPosters</b><small>Leting Pusaka Jeumala</small></span></div>
+      <div className="profile-brand"><Image src="/brand/pusaka-jeumala.webp" alt="" width={36} height={36} /><span><b>PusakaPosters</b><small>Leting Pusaka Jeumala</small></span></div>
       <div className="profile-welcome">
         <div><span className="profile-eyebrow">RUANG ANGGOTA</span><h2 id="profile-title">Halo, {member.name.split(' ')[0]}.</h2><p>Ini ruang pribadi untuk data dan foto postermu.</p></div>
         <div className="profile-private"><IconLock size={16} /><span>Pribadi</span></div>

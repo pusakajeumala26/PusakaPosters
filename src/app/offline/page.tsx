@@ -8,7 +8,7 @@ export default function OfflinePage() {
   return (
     <main className="offline">
       <div>
-        <Image className="mono" src="/brand/logo-mark-light.webp" alt="" width={56} height={56} />
+        <Image className="mono" src="/brand/pusaka-jeumala.webp" alt="" width={56} height={56} />
         <h1>Kamu sedang offline</h1>
         <p>PusakaPosters butuh internet untuk memuat dan mengirim data. Sambungkan kembali lalu coba lagi.</p>
         {/* Tautan biasa, bukan <Link>: halaman ini bisa tampil dari cache tanpa JavaScript */}

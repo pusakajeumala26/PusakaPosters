@@ -17,6 +17,6 @@ export function SplashScreen({ onDismiss }: { onDismiss: () => void }) {
     return () => { clearTimeout(start); clearTimeout(finish); };
   }, [onDismiss]);
   return <div className={exiting ? 'splash-screen exiting' : 'splash-screen'} style={{ transitionDuration: `${SPLASH_FADE_MS}ms` }} role="status" aria-label="Memuat PusakaPosters">
-    <Image src="/images/logo-splash.webp" width={150} height={149} alt="" priority unoptimized />
+    <Image src="/brand/pusaka-jeumala.webp" width={150} height={150} alt="" priority unoptimized />
   </div>;
 }
