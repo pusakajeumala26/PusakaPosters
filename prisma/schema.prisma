@@ -36,10 +36,45 @@ model Member {
   status       PosterStatus @default(MASUK)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+  sessions     MemberSession[]
 
   @@unique([countryCode, phone])
   @@index([createdAt])
   @@index([status])
+}
+
+/// Opaque, revocable member sessions. Only a SHA-256 token digest is stored.
+model MemberSession {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  memberId  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId, expiresAt])
+}
+
+/// Single-use onboarding codes issued by an admin. Plaintext is only shown once.
+model EnrollmentInvite {
+  id             String   @id @default(uuid())
+  codeHash       String   @unique
+  expiresAt      DateTime
+  usedAt         DateTime?
+  usedByMemberId String?
+  createdAt      DateTime @default(now())
+
+  @@index([expiresAt, usedAt])
+}
+
+/// Shared rate-limit counters for authentication across serverless instances.
+model AuthThrottle {
+  keyHash   String   @id
+  count     Int      @default(0)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }
 
 /// Baris tunggal (id = 1)

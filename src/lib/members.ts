@@ -1,23 +1,16 @@
 import type { Member, Setting } from '@/generated/prisma/client';
+import { checkAdmin } from './auth';
 import { APP_TZ, APP_TZ_OFFSET_MS } from './constants';
 import { db } from './db';
 import { fmtPhone, maskPhone } from './format';
 import { signedUrls } from './supabase';
 import { thumbPath } from './thumb';
 import type { MemberView, SettingsView, Stats } from './types';
+import { requireMemberSession } from './member-auth';
+import { HttpError } from './http';
 
 const DAY_MS = 86_400_000;
 const DAY_LABELS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-
-async function safeSign(paths: string[]): Promise<Record<string, string>> {
-  try {
-    return await signedUrls(paths);
-  } catch (e) {
-    // Dashboard tetap tampil (dengan inisial) jika storage bermasalah.
-    console.error('[storage] signed URL gagal:', e);
-    return {};
-  }
-}
 
 function toView(m: Member, admin: boolean, urls: Record<string, string>): MemberView {
   const shownPath = m.cutoutPath ?? m.originalPath;
@@ -44,19 +37,35 @@ function toView(m: Member, admin: boolean, urls: Record<string, string>): Member
   return view;
 }
 
-export async function listMembers(admin: boolean): Promise<MemberView[]> {
+export async function listMembers(): Promise<MemberView[]> {
+  if (!(await checkAdmin())) throw new HttpError(401, 'Sesi admin berakhir. Masuk lagi sebagai admin.');
   const rows = await db.member.findMany({ orderBy: { createdAt: 'desc' } });
   const wanted = new Set<string>();
   for (const m of rows) {
     const shown = m.cutoutPath ?? m.originalPath;
     if (shown) wanted.add(shown);
-    if (admin) {
-      if (m.originalPath) wanted.add(m.originalPath);
-      if (m.cutoutPath) wanted.add(m.cutoutPath);
-    }
+    if (m.originalPath) wanted.add(m.originalPath);
+    if (m.cutoutPath) wanted.add(m.cutoutPath);
   }
-  const urls = await safeSign([...wanted]);
-  return rows.map((m) => toView(m, admin, urls));
+  // Fail closed if Storage cannot confirm the bucket is private or issue URLs.
+  const urls = await signedUrls([...wanted], 3600);
+  return rows.map((m) => toView(m, true, urls));
+}
+
+/** A single member profile, scoped by the caller before this function is used. */
+export async function getMemberProfile(id: string): Promise<MemberView | null> {
+  if (!(await checkAdmin())) {
+    const session = await requireMemberSession();
+    if (session.memberId !== id) throw new HttpError(404, 'Data tidak ditemukan.');
+  }
+  const member = await db.member.findUnique({ where: { id } });
+  if (!member) return null;
+  // Member profile uses the authenticated no-store thumbnail endpoint, not a
+  // bearer signed storage URL that could linger in a shared browser cache.
+  const view = toView(member, false, {});
+  view.phoneDisplay = `${member.countryCode} ${fmtPhone(member.phone)}`;
+  view.phone = member.phone;
+  return view;
 }
 
 export async function getStats(settings: Setting): Promise<Stats> {

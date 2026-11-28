@@ -1,6 +1,7 @@
-import { checkAdmin, comparePassword, hashPassword } from '@/lib/auth';
+import { checkAdmin, hashPassword } from '@/lib/auth';
+import { createMemberSession, requireMemberSession, revokeMemberSessions } from '@/lib/member-auth';
 import { db } from '@/lib/db';
-import { assertSameOrigin, clientIp, formString, HttpError, json, rateLimit, route } from '@/lib/http';
+import { assertSameOrigin, formString, HttpError, json, route } from '@/lib/http';
 import { normalizeToPng, normalizeToWebp } from '@/lib/image-server';
 import { isUniqueViolation, optionalFile, parseMemberFields } from '@/lib/member-input';
 import { removePaths, uploadPng, uploadWebp } from '@/lib/supabase';
@@ -12,25 +13,22 @@ export const maxDuration = 30;
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * Edit data anggota. Boleh dilakukan admin (cookie sesi) atau pemilik data
- * (field currentPassword harus cocok). Foto opsional; jika foto baru dikirim
+ * Edit data anggota. Admin can edit anyone; member sessions are strictly owner-scoped.
+ * Foto opsional; jika foto baru dikirim
  * tanpa cutout, cutout lama dihapus supaya tidak tertinggal foto orang lain/lama.
  */
 export const PATCH = route(async (req: Request, ctx: Ctx) => {
   assertSameOrigin(req);
   const { id } = await ctx.params;
-  const form = await req.formData();
+  const admin = await checkAdmin();
+  if (!admin) {
+    const session = await requireMemberSession();
+    if (session.memberId !== id) throw new HttpError(404, 'Data tidak ditemukan.');
+  }
 
   const member = await db.member.findUnique({ where: { id } });
   if (!member) throw new HttpError(404, 'Data tidak ditemukan.');
-
-  if (!(await checkAdmin())) {
-    rateLimit(`edit:${id}:${clientIp(req)}`, 8, 15 * 60_000);
-    const current = formString(form.get('currentPassword'));
-    if (!current || !(await comparePassword(current, member.passwordHash))) {
-      throw new HttpError(403, 'Password tidak cocok dengan data ini.');
-    }
-  }
+  const form = await req.formData();
 
   const fields = parseMemberFields(form);
   const newPw = formString(form.get('password'));
@@ -74,6 +72,7 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
         countryCode: fields.countryCode,
         phone: fields.phone,
         gender: fields.gender,
+        quote: fields.quote,
         originalPath: nextOriginalPath,
         cutoutPath: nextCutoutPath,
         ...(passwordHash ? { passwordHash } : {}),
@@ -82,6 +81,11 @@ export const PATCH = route(async (req: Request, ctx: Ctx) => {
   } catch (e) {
     if (isUniqueViolation(e)) throw new HttpError(409, 'Nomor ini sudah dipakai anggota lain.');
     throw e;
+  }
+
+  if (passwordHash) {
+    await revokeMemberSessions(id);
+    if (!admin) await createMemberSession(id);
   }
 
   if (oldCutoutPath) await removePaths([oldCutoutPath]).catch(() => {});

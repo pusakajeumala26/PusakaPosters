@@ -8,5 +8,5 @@ export const metadata: Metadata = { title: 'Galeri Foto' };
 
 export default async function GalleryPage() {
   if (!(await isAdmin())) return <AdminGate pageName="Galeri Foto" />;
-  return <GalleryView members={await listMembers(true)} />;
+  return <GalleryView members={await listMembers()} />;
 }

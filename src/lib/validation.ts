@@ -10,40 +10,22 @@ export const memberFields = z.object({
     z.string().min(3, 'Tulis nama lengkap, minimal 3 huruf.').max(80, 'Nama terlalu panjang (maks. 80 huruf).'),
   ),
   countryCode: z.enum(COUNTRY_CODES, { error: 'Pilih kode negara.' }),
-  phone: z
-    .string()
-    .transform(normalizePhone)
-    .pipe(
-      z
-        .string()
-        .min(8, 'Nomor terlalu pendek. Contoh: 812 3456 7890.')
-        .max(15, 'Nomor terlalu panjang.'),
-    ),
+  phone: z.string().transform(normalizePhone).pipe(
+    z.string().min(8, 'Nomor terlalu pendek. Contoh: 812 3456 7890.').max(15, 'Nomor terlalu panjang.'),
+  ),
   gender: z.enum(['L', 'P'], { error: 'Pilih gender.' }),
+  quote: z.string().trim().max(120, 'Quote maksimal 120 karakter.').default(''),
 });
 
-export const newMemberPassword = z
-  .string()
-  .min(4, 'Buat password minimal 4 karakter.')
-  .max(72, 'Password maksimal 72 karakter.');
+export const newMemberPassword = z.string().min(8, 'Buat password minimal 8 karakter.').max(72, 'Password maksimal 72 karakter.');
+export const editMemberPassword = z.string().min(8, 'Password baru minimal 8 karakter.').max(72, 'Password maksimal 72 karakter.');
+export const adminPassword = z.string().min(8, 'Password admin minimal 8 karakter.').max(72, 'Password maksimal 72 karakter.');
 
-export const editMemberPassword = z
-  .string()
-  .min(4, 'Password baru minimal 4 karakter.')
-  .max(72, 'Password maksimal 72 karakter.');
-
-export const adminPassword = z
-  .string()
-  .min(8, 'Password admin minimal 8 karakter.')
-  .max(72, 'Password maksimal 72 karakter.');
-
-export const settingsPatch = z
-  .object({
-    letingName: z.string().trim().min(2, 'Nama leting minimal 2 huruf.').max(60, 'Nama leting terlalu panjang.'),
-    target: z.number().int('Target harus bilangan bulat.').min(1, 'Target minimal 1.').max(5000, 'Target maksimal 5000.'),
-    deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal tidak valid.').nullable(),
-    uploadOpen: z.boolean(),
-  })
-  .partial();
+export const settingsPatch = z.object({
+  letingName: z.string().trim().min(2, 'Nama leting minimal 2 huruf.').max(60, 'Nama leting terlalu panjang.'),
+  target: z.number().int('Target harus bilangan bulat.').min(1, 'Target minimal 1.').max(5000, 'Target maksimal 5000.'),
+  deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal tidak valid.').nullable(),
+  uploadOpen: z.boolean(),
+}).partial();
 
 export const statusPatch = z.object({ status: z.enum(['MASUK', 'DESAIN', 'SIAP', 'POSTING']) });
