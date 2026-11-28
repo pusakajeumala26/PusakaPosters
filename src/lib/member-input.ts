@@ -8,11 +8,11 @@ export function parseMemberFields(form: FormData) {
     countryCode: formString(form.get('countryCode')),
     phone: formString(form.get('phone')),
     gender: formString(form.get('gender')),
+    quote: formString(form.get('quote')),
   });
   if (!r.success) throw new HttpError(422, r.error.issues[0]?.message ?? 'Data tidak valid.');
   return r.data;
 }
 
 export const isUniqueViolation = (e: unknown) => (e as { code?: string } | null)?.code === 'P2002';
-
 export const optionalFile = (v: FormDataEntryValue | null) => (v instanceof File && v.size > 0 ? v : null);

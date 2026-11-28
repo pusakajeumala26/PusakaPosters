@@ -4,7 +4,7 @@ export type ThumbWidth = (typeof THUMB_WIDTHS)[number];
 export const DEFAULT_THUMB_WIDTH: ThumbWidth = 480;
 
 /** Alamat thumbnail yang stabil; versi (updatedAt) membuat cache browser/CDN berganti saat foto diubah. */
-export const thumbPath = (id: string, version: number) => `/api/members/${encodeURIComponent(id)}/thumb?v=${version}`;
+export const thumbPath = (id: string, version: number) => `/api/private/members/${encodeURIComponent(id)}/thumb?v=${version}`;
 
 export const thumbSrc = (url: string | null, width: ThumbWidth): string | null => (url ? `${url}&w=${width}` : null);
 

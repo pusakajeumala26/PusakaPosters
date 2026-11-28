@@ -15,7 +15,7 @@ import { ContactAdmin } from './ContactAdmin';
 
 export type EditingState = { member: MemberView; data: EditableMember; password?: string };
 
-type Field = 'name' | 'phone' | 'gender' | 'pw' | 'photo';
+type Field = 'name' | 'phone' | 'gender' | 'quote' | 'pw' | 'photo';
 type Errors = Partial<Record<Field, string>>;
 
 type Props = {
@@ -48,6 +48,7 @@ export function UploadModal({ open, presence, editing, admin, uploadOpen, onClos
     cc: editing?.data.countryCode ?? '+62',
     phone: editing?.data.phone ?? '',
     gender: (editing?.data.gender ?? '') as Gender | '',
+    quote: editing?.data.quote ?? '',
     pw: '',
   });
   const [errors, setErrors] = useState<Errors>({});
@@ -119,6 +120,7 @@ export function UploadModal({ open, presence, editing, admin, uploadOpen, onClos
       countryCode: f.cc,
       phone: f.phone,
       gender: f.gender,
+      quote: f.quote,
     });
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
@@ -154,6 +156,7 @@ export function UploadModal({ open, presence, editing, admin, uploadOpen, onClos
     fd.set('countryCode', f.cc);
     fd.set('phone', f.phone);
     fd.set('gender', f.gender);
+    fd.set('quote', f.quote);
     if (f.pw) fd.set('password', f.pw);
     if (editing && !admin && editing.password) fd.set('currentPassword', editing.password);
     if (photo) {
@@ -195,7 +198,7 @@ export function UploadModal({ open, presence, editing, admin, uploadOpen, onClos
   return (
     <div className="ov" data-state={presence} aria-hidden={!open} inert={!open}>
       <button type="button" className="scrim" aria-label="Tutup form" tabIndex={-1} onClick={onClose} />
-      <form ref={ref} className="dlg" role="dialog" aria-modal="true" aria-labelledby="up-title" tabIndex={-1} onSubmit={submit} noValidate>
+      <form ref={ref} className={isEdit && !admin ? 'dlg edit-dlg' : 'dlg'} role="dialog" aria-modal="true" aria-labelledby="up-title" tabIndex={-1} onSubmit={submit} noValidate>
         <div className="grab" aria-hidden="true" />
         <div className="dlg-h">
           <div>
@@ -286,6 +289,12 @@ export function UploadModal({ open, presence, editing, admin, uploadOpen, onClos
                 <FieldError id="err-phone" message={errors.phone} />
               </div>
 
+              <div className="field">
+                <label className="lbl" htmlFor="f-quote">Quote (opsional)</label>
+                <textarea id="f-quote" className="inp" maxLength={120} value={f.quote} onChange={(e) => set('quote', e.target.value)} placeholder="Satu langkah lagi, jadi bagian dari leting Pusaka Jeumala." />
+                <span className="hint">{f.quote.length}/120</span>
+              </div>
+
               <div className={fc('gender')}>
                 <label className="lbl" htmlFor="f-gender">
                   Gender
@@ -312,7 +321,7 @@ export function UploadModal({ open, presence, editing, admin, uploadOpen, onClos
                     className="inp"
                     type={showPw ? 'text' : 'password'}
                     autoComplete="new-password"
-                    placeholder="Minimal 4 karakter"
+                    placeholder="Minimal 8 karakter"
                     value={f.pw}
                     onChange={(e) => set('pw', e.target.value)}
                     aria-invalid={inv('pw')}

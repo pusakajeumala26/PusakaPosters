@@ -8,5 +8,5 @@ export const metadata: Metadata = { title: 'Status Poster' };
 
 export default async function StatusPage() {
   if (!(await isAdmin())) return <AdminGate pageName="Status Poster" />;
-  return <StatusBoard members={await listMembers(true)} />;
+  return <StatusBoard members={await listMembers()} />;
 }

@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  PWA dashboard monokrom untuk mengumpulkan data dan foto anggota leting <b>Pusaka Jeumala</b><br>
+  PWA mobile-first untuk mengelola profil dan foto anggota leting <b>Pusaka Jeumala</b><br>
   sebagai bahan poster branding media sosial.
 </p>
 
@@ -18,21 +18,24 @@
 
 ## Alur upload foto
 
-1. Anggota memilih foto di modal Upload.
-2. **Di browser**: model segmentasi (`@tensorflow-models/body-segmentation`, Selfie Segmentation) menghapus background.
-3. Foto asli dan hasil cutout dikonversi ke **`.webp`**.
-4. Dikirim ke server; server memvalidasi ulang (sharp), lalu menyimpan ke Supabase Storage dengan struktur:
+1. Anggota memakai kode undangan sekali pakai dari panitia, lalu membuat akun dengan nomor telepon dan password.
+2. Saat pendaftaran, anggota mengisi profil dan memilih foto. Akun anggota lama tetap memakai nomor dan password yang dibuat saat upload sebelumnya.
+3. **Di browser**: model segmentasi (`@tensorflow-models/body-segmentation`, Selfie Segmentation) menghapus background.
+4. Foto asli dan hasil cutout dinormalisasi ke WebP dan PNG alpha.
+5. Dikirim ke server; server memvalidasi ulang (sharp), lalu menyimpan ke Supabase Storage dengan struktur:
 
 ```
 member-photos/
   <nama-anggota>-<8 huruf id>/
     original.webp
-    cutout.webp
+    cutout.png
 ```
 
-5. Path file + data anggota disimpan di Postgres (NeonDB) lewat Prisma.
+6. Path file + data anggota disimpan di Postgres (NeonDB) lewat Prisma.
 
-Jika penghapusan background gagal (mis. tidak ada orang terdeteksi), foto asli tetap terkirim dan pengguna diberi pesan.
+Jika penghapusan background gagal (mis. tidak ada orang terdeteksi), foto asli tetap terkirim dan pengguna diberi pesan. Anggota hanya dapat melihat dan mengubah profilnya sendiri; direktori dan foto seluruh anggota hanya dapat dibuka admin.
+
+Panitia membuat kode di **Pengaturan → Undangan anggota**. Kode acak 128-bit berlaku tujuh hari dan hanya dapat digunakan sekali; database hanya menyimpan hash kode. Pendaftaran ditutup bersama sakelar **Terima upload baru**.
 
 ## Setup
 
@@ -48,6 +51,8 @@ npm install            # juga menjalankan prisma generate + menyalin model Media
 npx prisma migrate deploy
 npm run dev
 ```
+
+Migrasi `0003_member_accounts` menambahkan sesi anggota dan kode undangan tanpa menghapus data anggota lama. Akun lama menggunakan nomor telepon dan password yang ditetapkan saat upload. Jika password lupa, anggota perlu menghubungi admin.
 
 ## Variabel lingkungan
 
@@ -75,15 +80,17 @@ URL dan API key MCP portfolio diatur super admin lewat menu Super Admin > MCP Se
 
 ## Keamanan
 
-- Bucket private; foto ditampilkan lewat signed URL (1 jam). Service-role key tidak pernah ke browser.
-- Nomor HP disamarkan untuk non-admin. Halaman Galeri, Status, Pengaturan hanya untuk admin (cookie JWT httpOnly 12 jam; ganti password admin membatalkan sesi lama).
-- Password anggota di-hash (bcrypt). Ada cek same-origin (CSRF), validasi zod di klien & server, dan rate limit sederhana (in-memory, bersifat best-effort di serverless).
-- Ekspor CSV dilindungi dari formula injection.
+- Bucket private; service-role key tidak pernah ke browser. Foto disajikan hanya setelah pemeriksaan sesi pemilik atau admin, melalui signed URL singkat atau endpoint thumbnail `no-store`.
+- Direktori, galeri, status, ekspor, dan pengaturan hanya untuk admin. Sesi anggota memakai token acak opaque di cookie httpOnly 30 hari; database hanya menyimpan hash token. Logout dan pergantian password mencabut sesi.
+- Login anggota memakai kode negara, nomor HP, dan password bcrypt. Pendaftaran memerlukan kode undangan satu kali. Pembatasan login dan pendaftaran disimpan di Neon agar berlaku lintas instance; pembatas feedback publik masih in-memory dan best-effort di serverless.
+- Ada cek same-origin (CSRF), validasi server, dan ekspor CSV dilindungi dari formula injection.
 
 ## PWA
 
 `manifest.ts`, `public/sw.js` (halaman offline, cache aset statis & model; tidak pernah men-cache `/api` atau foto), tombol Install hanya di Pengaturan.
 Service worker aktif hanya pada build production (`npm run build && npm start`).
+
+Saat merilis perubahan privasi, deploy migrasi `0003_member_accounts` sebelum aplikasi menerima trafik baru. Thumbnail kini memakai URL `/api/private/...` dengan `no-store`; route lama `/api/members/:id/thumb` dipensiunkan. Aplikasi juga memastikan bucket Supabase `member-photos` berstatus private saat foto dibaca/ditandatangani. Purge cache CDN Vercel untuk route thumbnail lama sebelum mengumumkan rilis, karena versi sebelumnya mengirim header cache publik satu tahun. Signed URL foto lama berhenti berlaku setelah masa kedaluwarsanya.
 
 ## Maintenance
 

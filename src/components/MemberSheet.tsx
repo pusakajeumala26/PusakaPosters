@@ -69,6 +69,7 @@ export function MemberSheet({ member: incomingMember, admin, onClose, onEdit }: 
       countryCode: activeMember.countryCode,
       phone: activeMember.phone ?? '',
       gender: activeMember.gender,
+      quote: activeMember.quote,
     });
   }
 
