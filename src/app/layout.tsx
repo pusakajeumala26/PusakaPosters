@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#ffffff',
+  themeColor: '#000000',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -23,8 +23,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <head><link rel="preload" as="image" href="/images/logo-splash.webp" /></head>
+    <html lang="id" data-theme="dark" data-theme-mode="system" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: "try{const r=document.documentElement;const m=localStorage.getItem('pusaka-theme');const p=['system','light','dark'].includes(m)?m:'system';r.dataset.themeMode=p;r.dataset.theme=p==='system'?(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):p}catch{document.documentElement.dataset.themeMode='system';document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}" }} />
+        <link rel="preload" as="image" href="/images/logo-splash.webp" />
+      </head>
       <body>
         <ToastProvider>
           {children}

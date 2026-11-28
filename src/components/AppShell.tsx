@@ -10,6 +10,7 @@ import { usePresence } from '@/lib/use-presence';
 import { usePwaInstall } from '@/lib/pwa';
 import { ContactAdmin } from './ContactAdmin';
 import { FeedbackDialog } from './FeedbackForm';
+import { ThemeSwitcher } from './ThemeSwitcher';
 import {
   IconBoard,
   IconChat,
@@ -206,6 +207,7 @@ export function AppShell({ letingName, admin, superAdmin, member, children }: { 
         </nav>}
 
         <div className="side-foot">
+          <ThemeSwitcher />
           {canInstall && !installed && <button type="button" className="btn ghost block" onClick={onInstall}>
             <IconDownload size={18} />
             Instal aplikasi
