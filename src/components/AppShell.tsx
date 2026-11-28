@@ -156,7 +156,7 @@ export function AppShell({ letingName, admin, superAdmin, member, children }: { 
         inert={!desktop && !open}
       >
         <div className="brand">
-          <Image className="mono" src="/brand/logo-mark-light.webp" alt="" width={44} height={44} />
+          <Image className="mono" src="/brand/pusaka-jeumala.webp" alt="" width={44} height={44} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <b>PusakaPosters</b>
             <span>{member && !admin ? `Halo, ${member.name.split(' ')[0]}` : `Leting ${letingName}`}</span>
@@ -252,7 +252,7 @@ export function AppShell({ letingName, admin, superAdmin, member, children }: { 
 
       <div className="main">
         <header className="top">
-          <Image className="mono top-mono" src="/brand/logo-mark-light.webp" alt="" width={44} height={44} />
+          <Image className="mono top-mono" src="/brand/pusaka-jeumala.webp" alt="" width={44} height={44} />
           <div className="top-t">
             <h1>{meta.title}</h1>
             {sub && <p>{sub}</p>}

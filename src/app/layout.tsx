@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="id" data-theme="dark" data-theme-mode="system" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: "try{const r=document.documentElement;const m=localStorage.getItem('pusaka-theme');const p=['system','light','dark'].includes(m)?m:'system';r.dataset.themeMode=p;r.dataset.theme=p==='system'?(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):p}catch{document.documentElement.dataset.themeMode='system';document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}" }} />
-        <link rel="preload" as="image" href="/images/logo-splash.webp" />
+        <link rel="preload" as="image" href="/brand/pusaka-jeumala.webp" />
       </head>
       <body>
         <ToastProvider>
