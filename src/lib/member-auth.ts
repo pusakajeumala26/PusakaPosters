@@ -93,7 +93,7 @@ export async function authenticateMember(countryCode: string, phone: string, pas
   return member;
 }
 
-export const hashInviteCode = (code: string) => digest(code.replace(/[^a-z0-9]/gi, '').toUpperCase());
+
 
 /** Database-backed fixed-window limiter, shared across serverless instances. */
 export async function consumeAuthLimit(key: string, limit: number, windowMs: number) {

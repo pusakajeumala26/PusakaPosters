@@ -20,10 +20,10 @@ enum PosterStatus {
 }
 
 model Member {
-  id           String       @id @default(uuid())
+  id           String             @id @default(uuid())
   name         String
   /// Nama folder di Supabase Storage: "<slug-nama>-<8 huruf id>"
-  folder       String       @unique
+  folder       String             @unique
   countryCode  String
   /// Hanya digit, tanpa nol di depan dan tanpa kode negara
   phone        String
@@ -33,10 +33,11 @@ model Member {
   /// Path di bucket, mis. "nurul-aini-safira-1a2b3c4d/original.webp"
   originalPath String?
   cutoutPath   String?
-  status       PosterStatus @default(MASUK)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  status       PosterStatus       @default(MASUK)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
   sessions     MemberSession[]
+  loginEvents  MemberLoginEvent[]
 
   @@unique([countryCode, phone])
   @@index([createdAt])
@@ -55,19 +56,18 @@ model MemberSession {
   @@index([memberId, expiresAt])
 }
 
-/// Single-use onboarding codes issued by an admin. Plaintext is only shown once.
-model EnrollmentInvite {
-  id             String   @id @default(uuid())
-  codeHash       String   @unique
-  expiresAt      DateTime
-  usedAt         DateTime?
-  usedByMemberId String?
-  createdAt      DateTime @default(now())
+// Shared rate-limit counters for authentication across serverless instances.
+/// Successful member sign-ins, retained for admin daily usage analytics.
+model MemberLoginEvent {
+  id        String   @id @default(uuid())
+  memberId  String
+  createdAt DateTime @default(now())
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  @@index([expiresAt, usedAt])
+  @@index([createdAt])
+  @@index([memberId, createdAt])
 }
 
-/// Shared rate-limit counters for authentication across serverless instances.
 model AuthThrottle {
   keyHash   String   @id
   count     Int      @default(0)

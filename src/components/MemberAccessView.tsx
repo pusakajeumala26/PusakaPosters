@@ -32,7 +32,6 @@ export function MemberAccessView() {
   const [quote, setQuote] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [inviteCode, setInviteCode] = useState('');
   const [photo, setPhoto] = useState<PhotoResult | null>(null);
   const [stage, setStage] = useState<Stage | null>(null);
   const [error, setError] = useState('');
@@ -73,7 +72,6 @@ export function MemberAccessView() {
         if (!valid.success) throw new Error(valid.error.issues[0]?.message ?? 'Periksa kembali data anggota.');
         const validPassword = newMemberPassword.safeParse(password);
         if (!validPassword.success) throw new Error(validPassword.error.issues[0]?.message ?? 'Password tidak valid.');
-        if (!inviteCode.trim()) throw new Error('Masukkan kode undangan dari admin.');
         if (!photo) throw new Error('Pilih foto profil untuk membuat akun.');
         const body = new FormData();
         body.set('name', valid.data.name);
@@ -82,7 +80,6 @@ export function MemberAccessView() {
         body.set('gender', valid.data.gender);
         body.set('quote', valid.data.quote ?? '');
         body.set('password', validPassword.data);
-        body.set('inviteCode', inviteCode);
         body.set('original', photo.original, 'original.webp');
         if (photo.cutout) body.set('cutout', photo.cutout, 'cutout.png');
         response = await fetch('/api/member-auth/register', { method: 'POST', body });
@@ -139,20 +136,16 @@ export function MemberAccessView() {
             {error && <div className="access-error" role="alert"><IconAlert size={17} />{error}</div>}
             <button className="btn primary block access-submit" type="submit" disabled={busy}>{busy ? 'Memproses…' : 'Masuk ke profil'}</button>
           </form>
-          <button type="button" className="invite-link" onClick={() => { setMode('register'); setError(''); }}>Buat akun dengan kode undangan <span>›</span></button>
+          <button type="button" className="invite-link" onClick={() => { setMode('register'); setError(''); }}>Belum punya akun? Daftar sekarang <span>›</span></button>
           <div className="access-help-card"><div className="help-card-icon">◉</div><div><b>Butuh bantuan?</b><p>Lupa password atau mengalami kendala saat masuk?</p><button type="button" onClick={() => { setMode('help'); setError(''); }}>Hubungi pengurus</button></div></div>
           <p className="access-admin-link">Panitia? <Link href="/status">Masuk sebagai admin <span>›</span></Link></p>
         </> : <>
           <div className="access-heading">
             <span className="access-eyebrow">PENDAFTARAN ANGGOTA</span>
             <h1 id="access-title">Buat akun anggota</h1>
-            <p>Daftar dengan kode undangan dari panitia Pusaka Jeumala.</p>
+            <p>Buat akun pribadi untuk mengelola foto dan data profil Anda.</p>
           </div>
           <form className="access-form register-form" onSubmit={submit} noValidate>
-            <div className="field">
-              <label className="lbl" htmlFor="member-invite">Kode undangan <i>*</i></label>
-              <input id="member-invite" className="inp invite-input" autoComplete="one-time-code" placeholder="PP-2025-7F4K" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} />
-            </div>
             <div className="field">
               <label className="lbl" htmlFor="member-name">Nama lengkap <i>*</i></label>
               <input id="member-name" className="inp" autoComplete="name" maxLength={80} placeholder="Nama sesuai untuk poster" value={name} onChange={(e) => setName(e.target.value)} />
