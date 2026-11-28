@@ -17,6 +17,7 @@ import {
   IconDownload,
   IconGallery,
   IconHome,
+  IconImage,
   IconLock,
   IconLogout,
   IconMcp,
@@ -41,7 +42,9 @@ const SUPER_NAV: NavItem[] = [
 ];
 
 const PAGE_META: Record<string, { title: string; sub?: string }> = {
-  '/': { title: 'PusakaPosters' },
+  '/': { title: 'Beranda', sub: 'Ruang pribadi Pusaka Jeumala' },
+  '/aktivitas': { title: 'Aktivitas', sub: 'Perkembangan poster Anda' },
+  '/profil': { title: 'Profil Saya', sub: 'Data pribadi dan foto profil' },
   '/masukan': { title: 'Beri Feedback', sub: 'Bagikan pengalaman Anda' },
   '/feedback': { title: 'Feedback', sub: 'Masukan publik dan status pengirimannya' },
   '/galeri': { title: 'Galeri Foto', sub: 'Foto anggota untuk tim desain' },
@@ -75,7 +78,7 @@ export function AppShell({ letingName, admin, superAdmin, member, children }: { 
   const [contactsOpen, setContactsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [iosHelpOpen, setIosHelpOpen] = useState(false);
-  const meta = pathname === '/' && member && !admin ? { title: 'Profil saya', sub: 'Ruang anggota Pusaka Jeumala' } : PAGE_META[pathname] ?? PAGE_META['/'];
+  const meta = PAGE_META[pathname] ?? PAGE_META['/'];
   const sub = pathname === '/' && !member && !admin ? 'Masuk atau buat akun anggota' : pathname === '/' && !member ? `Leting ${letingName}` : meta.sub;
 
   useEffect(() => setOpen(false), [pathname]);
@@ -164,10 +167,8 @@ export function AppShell({ letingName, admin, superAdmin, member, children }: { 
 
         <nav className="nav-group" aria-label="Umum">
           <div className="nav-cap">Umum</div>
-          <Link href="/" className={navClass('/')} aria-current={current('/')}>
-            <IconHome />
-            {member && !admin ? 'Profil Saya' : 'Beranda'}
-          </Link>
+          <Link href="/" className={navClass('/')} aria-current={current('/')}><IconHome/>Beranda</Link>
+          {member && !admin && <><Link href="/aktivitas" className={navClass('/aktivitas')} aria-current={current('/aktivitas')}><IconBoard/>Aktivitas</Link><Link href="/profil" className={navClass('/profil')} aria-current={current('/profil')}><IconImage/>Profil Saya</Link></>}
           <button type="button" className="nav nav-btn" onClick={() => { setOpen(false); setFeedbackOpen(true); }}>
             <IconChat />
             Beri Feedback
@@ -276,9 +277,11 @@ export function AppShell({ letingName, admin, superAdmin, member, children }: { 
         </main>
       </div>
       {member && !admin && <nav className="member-bottom-nav" aria-label="Navigasi anggota">
-        <Link href="/" aria-current={current('/')}><IconHome /><span>Profil</span></Link>
-        <button type="button" onClick={() => setFeedbackOpen(true)}><IconChat /><span>Feedback</span></button>
-        <button type="button" onClick={memberLogout}><IconLogout /><span>Keluar</span></button>
+        <Link href="/" aria-current={current('/')}><IconHome/><span>Beranda</span></Link>
+        <Link href="/aktivitas" aria-current={current('/aktivitas')}><IconBoard/><span>Aktivitas</span></Link>
+        <Link href="/profil?edit=1" className="member-fab" aria-label="Edit foto dan profil"><IconImage/></Link>
+        <Link href="/profil" aria-current={current('/profil')}><IconImage/><span>Profil</span></Link>
+        <button type="button" onClick={() => setFeedbackOpen(true)}><IconChat/><span>Feedback</span></button>
       </nav>}
       {contactsPresence.present && <div className="ov contact-overlay" data-state={contactsPresence.phase} aria-hidden={!contactsOpen} inert={!contactsOpen}>
         <button type="button" className="scrim" aria-label="Tutup kontak pengurus" tabIndex={-1} onClick={() => setContactsOpen(false)} />

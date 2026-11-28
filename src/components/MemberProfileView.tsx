@@ -10,9 +10,9 @@ import { usePresence } from '@/lib/use-presence';
 import { UploadModal, type EditingState } from './UploadModal';
 import { IconImage, IconLock } from './icons';
 
-export function MemberProfileView({ member }: { member: MemberView }) {
+export function MemberProfileView({ member, autoEdit = false }: { member: MemberView; autoEdit?: boolean }) {
   const router = useRouter();
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(autoEdit);
   const presence = usePresence(editing, 340);
   const status = STATUS_META.find((item) => item.id === member.status)!;
   const editState: EditingState = {
@@ -46,6 +46,10 @@ export function MemberProfileView({ member }: { member: MemberView }) {
         </div>
       </article>
       <div className="profile-note"><span className="profile-note-mark"><IconLock size={18} /></span><div><b>Foto dan data ini hanya untukmu</b><p>Anggota lain tidak dapat melihat profil ini. Panitia dapat melihatnya untuk menyiapkan poster leting.</p></div></div>
+      <div className="profile-extra-grid">
+        <article><span className="profile-eyebrow">STATUS POSTER</span><b>{status.label}</b><small>Admin dapat melihat data untuk persiapan poster.</small></article>
+        <article><span className="profile-eyebrow">AKUN ANGGOTA</span><b>Aktif dan terlindungi</b><small>Gunakan nomor telepon dan password untuk masuk.</small></article>
+      </div>
       <div className="profile-caption"><span>PROFIL PRIBADI</span><span>·</span><span>Diperbarui setiap kali kamu menyimpan perubahan</span></div>
     </section>
     {presence.present && <UploadModal open={editing} presence={presence.phase} editing={editState} admin={false} uploadOpen={true} onClose={() => setEditing(false)} onDone={() => { setEditing(false); router.refresh(); }} />}
